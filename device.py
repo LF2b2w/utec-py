@@ -61,8 +61,6 @@ class DeviceInfo:
             serial_number=data.get('serialNumber')
         )
 
-
-
 @dataclass
 class Device:
     """U-Home device representation."""
@@ -108,15 +106,11 @@ class Device:
         return self.category == DeviceCategory.SWITCH
 
     @property
-    def is_camera(self) -> bool:
+    def is_plug(self) -> bool:
         """Check if device is a camera."""
         return self.category == DeviceCategory.PLUG
 
     # Capability-specific properties
-    @property
-    def supports_color(self) -> bool:
-        """Check if device supports color control."""
-        return Capability.COLOR_CONTROL in self.capabilities
 
     @property
     def supports_color_temperature(self) -> bool:
@@ -127,21 +121,6 @@ class Device:
     def supports_dimming(self) -> bool:
         """Check if device supports dimming."""
         return Capability.SWITCH_LEVEL in self.capabilities
-
-    @property
-    def supports_fingerprint(self) -> bool:
-        """Check if device supports fingerprint."""
-        return Capability.FINGERPRINT in self.capabilities
-
-    @property
-    def supports_video(self) -> bool:
-        """Check if device supports video streaming."""
-        return Capability.VIDEO_STREAM in self.capabilities
-
-    @property
-    def supports_two_way_audio(self) -> bool:
-        """Check if device supports two-way audio."""
-        return Capability.TWO_WAY_AUDIO in self.capabilities
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'Device':
@@ -212,3 +191,7 @@ class DeviceList:
     def get_switches(self) -> List[Device]:
         """Get all switch devices."""
         return self.get_devices_by_category(DeviceCategory.SWITCH)
+    
+    def get_plugs(self) -> List[Device]:
+        """Get all plug devices."""
+        return self.get_devices_by_category(DeviceCategory.PLUG)

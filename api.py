@@ -2,21 +2,12 @@
 
 import logging
 import aiohttp
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any, Optional
 from .authenticator import AuthenticationHandler
-from .device import Device
-from .activity import Activity
-from .exceptions import ApiError, ValidationError
-from pydantic import BaseModel, Field
-from typing import Any, Optional
+from .exceptions import ApiError
 from uuid import uuid4
-import uuid
 from .const import (
-    DEFAULT_API_BASE_URL,
     DEFAULT_TIMEOUT,
-    DEVICE_ACTION_LOCK,
-    DEVICE_ACTION_UNLOCK,
-    API_RETRY_ATTEMPTS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -35,27 +26,32 @@ class UHomeApi:
         self.session = session or aiohttp.ClientSession()
         self.authenticator = AuthenticationHandler(client_id, client_secret, redirect_uri)
 
-    async def _send_action(
+    async def _generate_payload(
         self,
-        device_id: str,
-        action: str,
+        namespace,
+        name,
         parameters: Optional[Dict] = None
     ) -> Dict[str, Any]:
         """Send action to device."""
-        payload = {
-            "action": action,
-            "parameters": parameters or {}
+        header = {
+            "namespace": namespace,
+            "name": name,
+            "messageID": str(uuid4()),
+            "payloadVersion": "1",
+        }
+        payload={
+            "header": header,
+            "payload": parameters
         }
         return await self._api_call(
             "POST",
-            f"/devices/{device_id}/actions",
             json=payload
-        )
+        )   
 
     async def _api_call(
         self,
         method: str,
-        endpoint: str,
+        endpoint = "https://api.u-tec.com/action",
         **kwargs
     ) -> Dict[str, Any]:
         """Make API call."""
@@ -72,7 +68,7 @@ class UHomeApi:
 
         async with self.session.request(
             method,
-            f"{DEFAULT_API_BASE_URL}{endpoint}",
+            f"{endpoint}",
             **kwargs
         ) as response:
             if response.status in (200, 201, 202):
@@ -83,6 +79,21 @@ class UHomeApi:
                     await response.text()
                 )
 
+    async def _discover(self):
+        return self._generate_payload("Uhome.Device","Discovery",None)
+    
+    async def _query_device(self,device_id):
+        params = {
+            "devices": [
+                {
+                    "id": device_id
+                }
+            ]
+        }
+        return self._generate_payload("Uhome.Device","Query",params)
+
     async def close(self):
         """Close the API client."""
         await self.session.close()
+    
+    
