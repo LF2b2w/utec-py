@@ -1,7 +1,8 @@
 """U-Home API constants."""
 
-DEFAULT_AUTH_BASE_URL = "https://oauth.u-tec.com"
-DEFAULT_API_BASE_URL = "https://app.uhomelabs.com/api/v1"
+AUTH_BASE_URL = "https://oauth.u-tec.com/authorize?"
+TOKEN_BASE_URL = "https://oauth.u-tec.com/token?"
+API_BASE_URL = "https://utec.com/actions"
 
 DEVICE_TYPE_LOCK = "smartlock"
 DEVICE_TYPE_PLUG = "SmartPlug"

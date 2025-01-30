@@ -3,10 +3,11 @@
 import logging
 import aiohttp
 from typing import Dict, Any, Optional
-from .authenticator import AuthenticationHandler
-from .exceptions import ApiError
+
+from authenticator import AuthenticationHandler
+from exceptions import ApiError
 from uuid import uuid4
-from .const import (
+from const import (
     DEFAULT_TIMEOUT,
 )
 
@@ -91,6 +92,40 @@ class UHomeApi:
             ]
         }
         return self._generate_payload("Uhome.Device","Query",params)
+
+    async def _send_command(self, device_id, capability, command):
+        params = {
+            "devices": [
+                {
+                    "id": device_id
+                },
+                {
+                    "command": {
+                        "capability": capability,
+                        "name": command
+                    }
+                }
+            ]
+        }
+        return self._generate_payload("Uhome.Device", "Command", params)
+    
+    async def _send_command_with_arg(self, device_id, capability, command, arguments,):
+        params = {
+            "devices": [
+                {
+                    "id": device_id
+                },
+                {
+                    "command": {
+                        "capability": capability,
+                        "name": command,
+                        "arguments": {
+                            arguments
+                        }
+                    }
+                }
+            ]
+        }
 
     async def close(self):
         """Close the API client."""
