@@ -1,19 +1,31 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=63"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "utec_py_LF2b2w"
 version = "0.0.1"
-authors = [
-    name="Luke Wallis", email="wallis.luke4@gmail.com"
-]
-description = "A python API wrapper and authentication handler for the U-Tec API"
+description = "A U-Home API client library."
 readme = "README.md"
-require_python = ">=3.8"
-license = "MIT"
-license-ffiles = ["LICENSE"]
+license = {text = "MIT"}
+authors = [
+    {name="Luke Wallis", email="wallis.luke4@gmail.com"},
+]
+dependencies = [
+    "aiohttp>=3.7.4,<4.0.0"
+]
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3.8",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent"
+]
+keywords = ["uhome", "home automation", "api client"]
 
 [project.urls]
 Homepage = "https://github.com/LF2b2w/utec-py"
 Issues = "https://github.com/LF2b2w/utec-py/issues"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+license-files = []

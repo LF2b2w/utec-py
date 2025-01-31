@@ -1,9 +1,0 @@
-LICENSE
-README.md
-pyproject.toml
-setup.cfg
-src/utec_py.egg-info/PKG-INFO
-src/utec_py.egg-info/SOURCES.txt
-src/utec_py.egg-info/dependency_links.txt
-src/utec_py.egg-info/top_level.txt
-tests/test_utec.py

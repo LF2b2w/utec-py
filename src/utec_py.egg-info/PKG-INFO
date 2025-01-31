@@ -1,6 +1,0 @@
-Metadata-Version: 2.2
-Name: utec-py
-Version: 0.1.0
-Summary: U-Tec Python API client
-Requires-Python: >=3.8
-License-File: LICENSE
