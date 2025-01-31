@@ -11,6 +11,7 @@ U-Tec's API is a single endpoint (https://api.utec.com/action) that uses variabl
 
 ## Device module
 Provides an easy way to organise/ingest device info without much significant change to the raw response. With devices stored in the format:
+```
             id=data['id'],
             name=data.get('name', ''),
             category=data.get('category', ''),
@@ -20,7 +21,7 @@ Provides an easy way to organise/ingest device info without much significant cha
             customData=data.get('customData'),
             attributes=data.get('attributes'),
             state=data.get('state')
-
+```
 ### Methods
 #### Token Management
 **exchange_code**
