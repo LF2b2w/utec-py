@@ -21,6 +21,10 @@ class AbstractAuth(ABC):
     @abstractmethod
     async def async_get_access_token(self) -> str:
         """Return a valid access token (refresh if needed)"""
+    
+    @abstractmethod
+    async def async_make_auth_request(self, method, **kwargs) -> ClientResponse:
+        """Perform API request"""
 
 class UtecOAuth2(AbstractAuth):
     def __init__(self, websession, client_id, client_secret, token=None):
@@ -43,13 +47,16 @@ class UtecOAuth2(AbstractAuth):
 
     async def async_exchange_code(self, code: str) -> dict:
         """Exchange authorization code for tokens."""
-        data = {
-            "client_id": self.client_id,
-            "client_secret": self.client_secret,
-            "grant_type": "authorization_code",
-            "code": code,
-        }
-        return await self._token_request(data)
+        if self.token == None:
+            data = {
+                "client_id": self.client_id,
+                "client_secret": self.client_secret,
+                "grant_type": "authorization_code",
+                "code": code,
+            }
+            return await self._token_request(data)
+        else:
+            return self.async_get_access_token()
 
     async def async_refresh_tokens(self) -> dict:
         """Refresh access token using refresh token."""
