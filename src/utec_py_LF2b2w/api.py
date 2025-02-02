@@ -1,91 +1,96 @@
-"""U-Home API client."""
-
-import logging
 from typing import Dict, Any, Optional
-from .exceptions import ApiError
 from uuid import uuid4
-from .auth import AbstractAuth, UtecOAuth2
+import logging
+from .const import ApiNamespace, ApiOperation, ApiRequest
+from .exceptions import ApiError
+from .auth import AbstractAuth
 
-#_LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 class UHomeApi:
-    """U-Home API client."""
+    """U-Home API client implementation."""
 
     def __init__(self, auth: AbstractAuth):
         self.auth = auth
 
-    async def _package_and_perform_request(
+    async def _create_request(
         self,
-        namespace,
-        name,
+        namespace: ApiNamespace,
+        operation: ApiOperation,
         parameters: Optional[Dict] = None
-    ) -> Dict[str, Any]:
-        """Send action to device."""
+    ) -> ApiRequest:
+        """Create a standardized API request."""
         header = {
             "namespace": namespace,
-            "name": name,
+            "name": operation,
             "messageID": str(uuid4()),
             "payloadVersion": "1",
         }
-        payload={
+        return {
             "header": header,
             "payload": parameters
         }
-        return await self._api_call(
-            "POST",
-            json=payload
-        )   
 
-    async def _api_call(self, method: str, **kwargs) -> Dict[str, Any]:
+    async def _make_request(self, method: str, **kwargs) -> Dict[str, Any]:
+        """Make an authenticated API request."""
         async with self.auth.async_make_auth_request(method, **kwargs) as response:
             if response.status == 204:
                 return {}
-            elif response.status in (200, 201, 202):
+            if response.status in (200, 201, 202):
                 return await response.json()
-            raise ApiError(response.status, await response.text())
 
-    async def _discover(self):
-        return await self._package_and_perform_request("Uhome.Device","Discovery",None)
-    
-    async def _query_device(self,device_id):
+            error_text = await response.text()
+            logger.error(f"API error: {response.status} - {error_text}")
+            raise ApiError(response.status, error_text)
+
+    async def discover_devices(self) -> Dict[str, Any]:
+        """Discover available devices."""
+        payload = await self._create_request(
+            ApiNamespace.DEVICE,
+            ApiOperation.DISCOVERY
+        )
+        return await self._make_request("POST", json=payload)
+
+    async def query_device(self, device_id: str) -> Dict[str, Any]:
+        """Query device status."""
         params = {
-            "devices": [
-                {
-                    "id": device_id
-                }
-            ]
+            "devices": [{"id": device_id}]
         }
-        return await self._package_and_perform_request("Uhome.Device","Query",params)
+        payload = await self._create_request(
+            ApiNamespace.DEVICE,
+            ApiOperation.QUERY,
+            params
+        )
+        return await self._make_request("POST", json=payload)
 
-    async def _send_command(self, device_id, capability, command):
+    async def send_command(
+        self,
+        device_id: str,
+        capability: str,
+        command: str,
+        arguments: Optional[Dict] = None
+    ) -> Dict[str, Any]:
+        """Send command to device."""
+        command_data = {
+            "capability": capability,
+            "name": command
+        }
+        if arguments:
+            command_data["arguments"] = arguments
+
         params = {
-                "devices": [
-                    {
-                        "id": device_id,
-                "command": {
-                    "capability": capability,
-                    "name": command
-                        }
-                    }
-                ]
-            }
-        return await self._package_and_perform_request("Uhome.Device", "Command", params)
-    
-    async def _send_command_with_arg(self, device_id, capability, command, arguments: dict):
-        params = {
-                "devices": [
-                    {
+            "devices": [{
                 "id": device_id,
-                "command": {
-                    "capability": capability,
-                    "name": command,
-                    "arguments": { arguments
-                            }
-                        }
-                    }
-                ]
-            }   
-        return await self._package_and_perform_request("Uhome.Device", "Command", params)
+                "command": command_data
+            }]
+        }
+
+        payload = await self._create_request(
+            ApiNamespace.DEVICE,
+            ApiOperation.COMMAND,
+            params
+        )
+        return await self._make_request("POST", json=payload)
 
     async def close(self):
         """Close the API client."""
