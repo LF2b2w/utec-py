@@ -22,9 +22,12 @@ class AbstractAuth(ABC):
     async def async_get_access_token(self) -> str:
         """Return a valid access token (refresh if needed)"""
     
-    #@abstractmethod
-    #async def async_make_auth_request(self, method, **kwargs) -> ClientResponse:
-    #    """Perform API request"""
+    async def async_make_auth_request(self, method, **kwargs) -> ClientResponse:
+        access_token = await self.async_get_access_token()
+        headers = kwargs.get("headers", {})
+        headers.update({"Authorization": f"Bearer {access_token}"})
+        kwargs["headers"] = headers
+        return self.websession.request(method, self.host, **kwargs)
 
 class UtecOAuth2(AbstractAuth):
     def __init__(self, websession, client_id, client_secret, token=None):
@@ -79,10 +82,3 @@ class UtecOAuth2(AbstractAuth):
             token_data = await resp.json()
             self._update_from_token(token_data)
             return token_data
-
-    async def async_make_auth_request(self, method, **kwargs) -> ClientResponse:
-        access_token = await self.async_get_access_token()
-        headers = kwargs.get("headers", {})
-        headers.update({"Authorization": f"Bearer {access_token}"})
-        kwargs["headers"] = headers
-        return self.websession.request(method, self.host, **kwargs)

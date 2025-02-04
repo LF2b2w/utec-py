@@ -18,3 +18,15 @@ class ApiError(UHomeError):
 class ValidationError(UHomeError):
     """Validation failed."""
     pass
+
+class DeviceError(Exception):
+    """Base exception for device-related errors."""
+    pass
+
+class UnsupportedFeatureError(DeviceError):
+    """Exception raised when a feature is not supported by the device."""
+    pass
+
+class ValidationError(DeviceError):
+    """Exception raised when device validation fails."""
+    pass
