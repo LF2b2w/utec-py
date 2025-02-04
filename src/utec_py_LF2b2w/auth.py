@@ -22,9 +22,9 @@ class AbstractAuth(ABC):
     async def async_get_access_token(self) -> str:
         """Return a valid access token (refresh if needed)"""
     
-    @abstractmethod
-    async def async_make_auth_request(self, method, **kwargs) -> ClientResponse:
-        """Perform API request"""
+    #@abstractmethod
+    #async def async_make_auth_request(self, method, **kwargs) -> ClientResponse:
+    #    """Perform API request"""
 
 class UtecOAuth2(AbstractAuth):
     def __init__(self, websession, client_id, client_secret, token=None):
