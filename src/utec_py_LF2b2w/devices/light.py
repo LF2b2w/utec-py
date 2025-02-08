@@ -1,129 +1,136 @@
-from typing import Optional
+# src/utec_py_LF2b2w/devices/light.py
 
+from typing import Optional, Tuple
 from .device import BaseDevice
-from .device_types import (
-    DeviceCategory,
+from .device_const import (
+    SwitchState,
     DeviceCapability,
     DeviceCommand,
-    LightAttributes,
-    RGBColor,
-    ColorModel,
-    ColorTemperatureRange
+    ColorState,
+    BrightnessRange,
+    ColorTempRange
 )
 
-from ..api import UHomeApi
-from ..exceptions import DeviceError
-
 class Light(BaseDevice):
-    """Represents a Light device in the U-Home API."""
-
-    @property
-    def category(self) -> DeviceCategory:
-        """Get the device category."""
-        return DeviceCategory.LIGHT
-    @property
-    def power_state(self) -> Optional[str]:
-        """Get the current power state."""
-        return self._get_state_value(DeviceCapability.SWITCH, "switch")
-
-    @property
-    def brightness(self) -> Optional[int]:
-        """Get the current brightness level (0-100)."""
-        return self._get_state_value(DeviceCapability.BRIGHTNESS, "brightness")
-
-    @property
-    def color_temperature(self) -> Optional[int]:
-        """Get the current color temperature."""
-        return self._get_state_value(DeviceCapability.COLOR_TEMP, "temperature")
-
-    @property
-    def color(self) -> Optional[RGBColor]:
-        """Get the current RGB color."""
-        color_dict = self._get_state_value(DeviceCapability.COLOR, "color")
-        return RGBColor.from_dict(color_dict) if color_dict else None
-
-    @property
-    def color_model(self) -> Optional[ColorModel]:
-        """Get the supported color model."""
-        model = self._attributes.get("colorModel")
-        return ColorModel(model) if model else None
-
-    @property
-    def color_temperature_range(self) -> Optional[ColorTemperatureRange]:
-        """Get the supported color temperature range."""
-        range_dict = self._attributes.get("colorTemperatureRange")
-        if range_dict:
-            return ColorTemperatureRange(
-                min=range_dict["min"],
-                max=range_dict["max"]
-            )
-        return None
+    """
+    Represents a Light device in the U-Home API.
+    Maps to Home Assistant's light platform.
+    """
 
     @property
     def is_on(self) -> bool:
-        """Check if the light is turned on."""
-        return self.power_state == "on"
+        """
+        Get light state.
+        Maps to Home Assistant's is_on property.
+        """
+        state = self._get_state_value(DeviceCapability.SWITCH, "switch")
+        return state == SwitchState.ON if state is not None else False
 
-    async def turn_on(self) -> None:
-        """Turn on the light."""
+    @property
+    def brightness(self) -> int | None:
+        """
+        Get brightness level (0-100).
+        Maps to Home Assistant's brightness property (will need conversion to 0-255).
+        """
+        return self._get_state_value(DeviceCapability.BRIGHTNESS, "level")
+
+    @property
+    def color_temp(self) -> Optional[int]:
+        """
+        Get color temperature in Kelvin.
+        Maps to Home Assistant's color_temp property (will need conversion to mireds).
+        """
+        return self._get_state_value(DeviceCapability.COLOR_TEMP, "temperature")
+
+    @property
+    def rgb_color(self) -> Optional[Tuple[int, int, int]]:
+        """
+        Get RGB color.
+        Maps to Home Assistant's rgb_color property.
+        """
+        color_data = self._get_state_value(DeviceCapability.COLOR, "color")
+        if color_data:
+            color = ColorState.from_dict(color_data)
+            return (color.r, color.g, color.b)
+        return None
+
+    @property
+    def supported_features(self) -> set:
+        """Get supported features for Home Assistant."""
+        features = set()
+        if self.has_capability(DeviceCapability.BRIGHTNESS):
+            features.add("brightness")
+        if self.has_capability(DeviceCapability.COLOR):
+            features.add("color")
+        if self.has_capability(DeviceCapability.COLOR_TEMP):
+            features.add("color_temp")
+        return features
+
+    async def turn_on(self, **kwargs) -> None:
+        """
+        Turn on the light with optional attributes.
+        Maps to Home Assistant's async_turn_on.
+        """
+        # Basic on command
         command = DeviceCommand(
             capability=DeviceCapability.SWITCH,
-            name="on"
+            name="switch",
+            arguments={"value": SwitchState.ON}
         )
         await self.send_command(command)
 
+        # Handle additional attributes
+        if "brightness" in kwargs:
+            await self.set_brightness(kwargs["brightness"])
+        if "color_temp" in kwargs:
+            await self.set_color_temp(kwargs["color_temp"])
+        if "rgb_color" in kwargs:
+            await self.set_rgb_color(*kwargs["rgb_color"])
+
     async def turn_off(self) -> None:
-        """Turn off the light."""
+        """
+        Turn off the light.
+        Maps to Home Assistant's async_turn_off.
+        """
         command = DeviceCommand(
             capability=DeviceCapability.SWITCH,
-            name="off"
+            name="switch",
+            arguments={"value": SwitchState.OFF}
         )
         await self.send_command(command)
 
     async def set_brightness(self, brightness: int) -> None:
-        """Set the brightness level."""
-        if not 0 <= brightness <= 100:
-            raise ValueError("Brightness must be between 0 and 100")
-
+        """Set brightness level."""
+        if not BrightnessRange.MIN <= brightness <= BrightnessRange.MAX:
+            raise ValueError(
+                f"Brightness must be between {BrightnessRange.MIN} and {BrightnessRange.MAX}"
+            )
         command = DeviceCommand(
             capability=DeviceCapability.BRIGHTNESS,
-            name="setBrightness",
-            arguments={"brightness": brightness}
+            name="level",
+            arguments={"value": brightness}
         )
         await self.send_command(command)
 
-    async def set_color_temperature(self, temperature: int) -> None:
-        """Set the color temperature."""
-        range_ = self.color_temperature_range
-        if range_ and not range_.min <= temperature <= range_.max:
+    async def set_color_temp(self, temp: int) -> None:
+        """Set color temperature."""
+        if not ColorTempRange.MIN <= temp <= ColorTempRange.MAX:
             raise ValueError(
-                f"Temperature must be between {range_.min} and {range_.max}"
+                f"Color temperature must be between {ColorTempRange.MIN}K and {ColorTempRange.MAX}K"
             )
-
         command = DeviceCommand(
             capability=DeviceCapability.COLOR_TEMP,
-            name="setColorTemperature",
-            arguments={"temperature": temperature}
+            name="temperature",
+            arguments={"value": temp}
         )
         await self.send_command(command)
 
-    async def set_color(self, color: RGBColor) -> None:
-        """Set the RGB color."""
-        if self.color_model != ColorModel.RGB:
-            raise DeviceError("Device does not support RGB color")
-
-        # Validate RGB values
-        for value in (color.r, color.g, color.b):
-            if not 0 <= value <= 255:
-                raise ValueError("RGB values must be between 0 and 255")
-
+    async def set_rgb_color(self, red: int, green: int, blue: int) -> None:
+        """Set RGB color."""
+        color = ColorState(r=red, g=green, b=blue)
         command = DeviceCommand(
             capability=DeviceCapability.COLOR,
-            name="setColor",
-            arguments={"color": color.to_dict()}
+            name="color",
+            arguments={"value": color.to_dict()}
         )
         await self.send_command(command)
-
-    async def update(self) -> None:
-        """Update device state."""
-        await super().update()

@@ -1,77 +1,34 @@
-"""Device factory for creating device instances based on discovery data."""
-from typing import Dict, Type, Optional
+"""Device handler for creating device instances based on discovery data"""
+
 import logging
+from typing import Dict, Type, Optional
+
 from .exceptions import DeviceError
 from .api import UHomeApi
+from .devices.device import BaseDevice
+from .devices.light import UtecLight
+from .devices.lock import UtecLock
+from .devices.switch import UtecSwitch
 from .const import (
     ATTR_HANDLE_TYPE,
     ATTR_DEVICE_ID,
-    ATTR_NAME,
-    ATTR_CATEGORY,
-    ATTR_DEVICE_INFO,
-    ATTR_ATTRIBUTES,
+    HandleType,
+    HANDLE_TYPE_CAPABILITIES
 )
-from .devices import BaseDevice, Light, Lock, Switch
 
 _LOGGER = logging.getLogger(__name__)
 
-class HandleType:
-    """Handle types for device capabilities."""
-    UTEC_LOCK = "utec-lock"
-    UTEC_LOCK_SENSOR = "utec-lock-sensor"
-    UTEC_DIMMER = "utec-dimmer"
-    UTEC_LIGHT_RGBAW = "utec-light-rgbaw-br"
-    UTEC_SWITCH = "utec-switch"
-
-class DeviceCapability:
-    """Device capabilities."""
-    SWITCH = "Switch"
-    LOCK = "Lock"
-    BATTERY_LEVEL = "BatteryLevel"
-    LOCK_USER = "LockUser"
-    DOOR_SENSOR = "DoorSensor"
-    BRIGHTNESS = "Brightness"
-    COLOR = "Color"
-    COLOR_TEMPERATURE = "ColorTemperature"
-    SWITCH_LEVEL = "Switch Level"
-
-# Mapping of handle types to their required capabilities
-HANDLE_TYPE_CAPABILITIES = {
-    HandleType.UTEC_LOCK: {
-        DeviceCapability.LOCK,
-        DeviceCapability.BATTERY_LEVEL,
-        DeviceCapability.LOCK_USER
-    },
-    HandleType.UTEC_LOCK_SENSOR: {
-        DeviceCapability.LOCK,
-        DeviceCapability.BATTERY_LEVEL,
-        DeviceCapability.DOOR_SENSOR
-    },
-    HandleType.UTEC_DIMMER: {
-        DeviceCapability.SWITCH,
-        DeviceCapability.SWITCH_LEVEL
-    },
-    HandleType.UTEC_LIGHT_RGBAW: {
-        DeviceCapability.SWITCH,
-        DeviceCapability.BRIGHTNESS,
-        DeviceCapability.COLOR,
-        DeviceCapability.COLOR_TEMPERATURE
-    },
-    HandleType.UTEC_SWITCH: {
-        DeviceCapability.SWITCH
-    }
-}
 
 class DeviceFacilitator:
-    """Factory for creating device instances based on discovery data."""
+    """class for creating device instances based on discovery data"""
 
     # Map handle types to device classes
     _handle_type_mapping: Dict[str, Type[BaseDevice]] = {
-        HandleType.UTEC_LOCK: Lock,
-        HandleType.UTEC_LOCK_SENSOR: Lock,
-        HandleType.UTEC_DIMMER: Light,
-        HandleType.UTEC_LIGHT_RGBAW: Light,
-        HandleType.UTEC_SWITCH: Switch
+        HandleType.UTEC_LOCK: UtecLock,
+        HandleType.UTEC_LOCK_SENSOR: UtecLock,
+        HandleType.UTEC_DIMMER: UtecLight,
+        HandleType.UTEC_LIGHT_RGBAW: UtecLight,
+        HandleType.UTEC_SWITCH: UtecSwitch
     }
 
     @classmethod
@@ -109,7 +66,7 @@ class DeviceFacilitator:
 
             # Add capabilities to discovery data
             capabilities = HANDLE_TYPE_CAPABILITIES.get(handle_type, set())
-            discovery_data['supported_capabilities'] = capabilities
+            discovery_data['supportedCapabilities'] = capabilities
 
             # Create device instance
             device = device_class(discovery_data, api)
@@ -136,7 +93,7 @@ class DeviceFacilitator:
         Raises:
             DeviceError: If device is missing required capabilities
         """
-        missing_capabilities = required_capabilities - set(device.supported_capabilities)
+        missing_capabilities = required_capabilities - set(device.supportedCapabilities)
         if missing_capabilities:
             raise DeviceError(
                 f"Device {device.device_id} missing required capabilities: {missing_capabilities}"

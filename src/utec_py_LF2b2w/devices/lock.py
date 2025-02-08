@@ -1,18 +1,14 @@
-from typing import Optional
+"""Abstraction layer for device interaction - Lock"""
 
 from .device import BaseDevice
-from .device_types import (
-    DeviceCapability,
-    DeviceCategory,
-    DeviceCommand,
+from .device_const import (
     LockState,
+    DeviceCapability,
+    DeviceCommand,
+    DeviceCategory,
 )
 
-from ..exceptions import DeviceError
-from ..api import UHomeApi
-
-class Lock(BaseDevice):
-    """Represents a Lock device in the U-Home API."""
+class UhomeLock(BaseDevice):
 
     @property
     def has_door_sensor(self) -> bool:
@@ -20,11 +16,11 @@ class Lock(BaseDevice):
         return self.has_capability(DeviceCapability.DOOR_SENSOR)
 
     @property
-    def door_state(self) -> Optional[str]:
+    def door_state(self) -> str | None:
         """Get the door state if door sensor is present."""
         if not self.has_door_sensor:
             return None
-        return self._get_state_value(DeviceCapability.DOOR_SENSOR, "doorState")
+        return self._get_state_value(DeviceCapability.DOOR_SENSOR, "sensorState")
 
     @property
     def category(self) -> DeviceCategory:
@@ -38,14 +34,21 @@ class Lock(BaseDevice):
         return LockState(state) if state else LockState.UNKNOWN
 
     @property
-    def battery_level(self) -> Optional[int]:
+    def battery_level(self) -> int | None:
         """Get the current battery level (0-100)."""
-        return self._get_state_value(DeviceCapability.BATTERY, "level")
+        return self._get_state_value(DeviceCapability.BATTERY_LEVEL, "level")
 
     @property
     def is_locked(self) -> bool:
         """Check if the lock is in locked state."""
         return self.lock_state == LockState.LOCKED
+
+    @property
+    def is_door_closed(self) -> bool | None:
+        """Check if the door is closed (binary sensor)."""
+        if not self.has_door_sensor:
+            return None
+        return self.door_state == "closed"
 
     async def lock(self) -> None:
         """Lock the device."""
