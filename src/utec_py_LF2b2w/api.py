@@ -1,25 +1,56 @@
-from typing import Dict, Any, Optional
-from uuid import uuid4
+""" Api class for Uhome/Utec API"""
+
+from enum import Enum
 import logging
-from .const import ApiNamespace, ApiOperation, ApiRequest
+
+from uuid import uuid4
+from typing import Dict, Any, TypedDict
+
+from attr import dataclass
+
+from .const import API_BASE_URL
 from .exceptions import ApiError
 from .auth import AbstractAuth
 
 logger = logging.getLogger(__name__)
 
+@dataclass
+class ApiNamespace(str, Enum):
+    DEVICE = "Uhome.Device"
+    USER = "Uhome.User"
+
+@dataclass
+class ApiOperation(str, Enum):
+    DISCOVERY = "Discovery"
+    QUERY = "Query"
+    COMMAND = "Command"
+
+@dataclass
+class ApiHeader(TypedDict):
+    namespace: str
+    name: str
+    messageID: str
+    payloadVersion: str
+
+@dataclass
+class ApiRequest(TypedDict):
+    header: ApiHeader
+    payload: dict | None
+
 class UHomeApi:
-    """U-Home API client implementation."""
+    """U-Home API client implementation"""
 
-    def __init__(self, auth: AbstractAuth):
-        self.auth = auth
+    def __init__(self, Auth: AbstractAuth):
+        """Initialise the API"""
+        self.auth = Auth
 
-    async def _create_request(
+    async def async_create_request(
         self,
         namespace: ApiNamespace,
         operation: ApiOperation,
-        parameters: Optional[Dict] = None
+        parameters: dict|None
     ) -> ApiRequest:
-        """Create a standardized API request."""
+        """Create a standardised API request"""
         header = {
             "namespace": namespace,
             "name": operation,
@@ -31,46 +62,62 @@ class UHomeApi:
             "payload": parameters
         }
 
-    async def _make_request(self, method: str, **kwargs) -> Dict[str, Any]:
-        """Make an authenticated API request."""
-        async with self.auth.async_make_auth_request(method, **kwargs) as response:
+    async def async_make_request(self, **kwargs):
+        """Make an authenticated API request"""
+
+        async with self.auth.make_request("POST", API_BASE_URL, **kwargs) as response:
             if response.status == 204:
                 return {}
-            if response.status in (200, 201, 202):
+            elif response.status in (200, 201, 202):
                 return await response.json()
-
-            error_text = await response.text()
-            logger.error(f"API error: {response.status} - {error_text}")
-            raise ApiError(response.status, error_text)
+            else:
+                error_text = await response.text()
+                logger.error(f"API error: {response.status} - {error_text}")
+                raise ApiError(response.status, error_text)
+    
+    async def validate_auth(self) -> bool:
+        """Validate authentication by making a test request."""
+        try:
+            await self.discover_devices()
+            return True
+        except ApiError:
+            return False
 
     async def discover_devices(self) -> Dict[str, Any]:
-        """Discover available devices."""
-        payload = await self._create_request(
+        """Discover available devices"""
+        payload = await self.async_create_request(
             ApiNamespace.DEVICE,
-            ApiOperation.DISCOVERY
+            ApiOperation.DISCOVERY,
+            None
         )
-        return await self._make_request("POST", json=payload)
+        return await self.async_make_request(json=payload)
 
-    async def query_device(self, device_id: str) -> Dict[str, Any]:
+    async def get_device_state(self, device_ids: list, custom_data: dict|None) -> Dict[str, Any]:
         """Query device status."""
+        devices = []
+        for device_id in device_ids:
+            device = {"id": device_id}
+            if custom_data:
+                device["custom_data"] = custom_data
+            devices.append(device)
         params = {
-            "devices": [{"id": device_id}]
+            "devices": devices
         }
-        payload = await self._create_request(
+        payload = await self.async_create_request(
             ApiNamespace.DEVICE,
             ApiOperation.QUERY,
             params
         )
-        return await self._make_request("POST", json=payload)
+        return await self.async_make_request(json=payload)
 
     async def send_command(
         self,
         device_id: str,
         capability: str,
         command: str,
-        arguments: Optional[Dict] = None
+        arguments: dict | None
     ) -> Dict[str, Any]:
-        """Send command to device."""
+        """Send command to device"""
         command_data = {
             "capability": capability,
             "name": command
@@ -85,13 +132,13 @@ class UHomeApi:
             }]
         }
 
-        payload = await self._create_request(
+        payload = await self.async_create_request(
             ApiNamespace.DEVICE,
             ApiOperation.COMMAND,
             params
         )
-        return await self._make_request("POST", json=payload)
+        return await self.async_make_request(json=payload)
 
     async def close(self):
-        """Close the API client."""
+        """Close the API client"""
         await self.auth.close()

@@ -1,12 +1,14 @@
 # utec-py
 Python API for U-Tec Devices. Primarily for Home Assistant, but should be able to be used anywhere.
 
+## **This project is still under development. Expect rapid and functionality breaking changes.**
+
 # Classes
 ## Oauth2.0 Authenticator
 Handles most of the Oauth2 authentication process. Generates auth request URL for webauth, and token exchange. Includes token management methods, expiry validation, token refresh. Contains an Abstract method for retrieving initial token to allow for varyation of initial auth request handling.
 ### UtecOauth2 Constructor
 
-## UtecAPI
+## UhomeApi
 U-Tec's API is a single endpoint (https://api.utec.com/action) that uses variable header information in the JSON payload to reach different API interfaces. So this class just handles packaging the variables responsible for different interfaces/actions correctly within the payload of the request.
 
 ## Device module
@@ -22,6 +24,10 @@ Provides an easy way to organise/ingest device info without much significant cha
             attributes=data.get('attributes'),
             state=data.get('state')
 ```
+## Device Abstraction
+Devices are abstracted via the device type files, API requests are pre-formatted and pre-filled for simple integration with downstream integrations.
+Currently Utec only fully supports all functions of locks, but there is limited functionality with switches and lights.
+
 ### Methods
 #### Token Management
 **exchange_code**
@@ -34,13 +40,12 @@ Verifies current token validity before returning either a new token obtained via
 Updates current token parameters, stores expires_in time and calculates expires_at with a 30s grace period.
 
 #### API Requests
-**make_auth_request**
-Handles configuring auth header, via validation method, and performing API webession request. Returns a async context manager ClientResponse variable.
+**make_request**
+Handles API requests, takes a clientsession websession to perform request function.
 
 ## API Manager
-**package_and_perform_request**
-Is the main function for performing API requests, takes name and namespace for the header object, which corresponds to the Device/User/Config interface, and their various sub functionalities. All device manipulation/command data is passed as a single dict variable via the different specific request functions.
-Also includes the API request with error and response handling, returning the response as a dict.
+**create_request**
+Packages request body parameters into a Utec/Uhome compliant standard.
 
 ## Install
 ```
@@ -52,7 +57,6 @@ pip install utec_py
 ```
 from utec_py import AbstractAuth
 from utec_py import UtecAPI
-from utec_py import DeviceList
 
 API = api()
 
@@ -65,7 +69,7 @@ class customAuthImplementation(AbstractAuth):
     """Return authentication for a custom auth implementation""
 ## API requests can be run with or without custom implementation as API class uses Abstract Auth as a parent to define request processess.
     
-    async def async_make_auth_request():
+    async def async_make_request():
         """Perform API Request"""
 ```
 **In built Auth Handling**
@@ -83,12 +87,6 @@ Authenticator.exchange_access_code("access_code")
 # Once Authenication has been completed devices can be called via API
 API._discover() # Perform device discovery
 API._query_device(device_id) # Query a specific devcie
-API._send_command(device_id, capability, command) # Send a device command without arguments
-API._send_command_with_arg(device_id, capability, command, arguments: dict) # For commands with arguments ie light brightness or colourtemperature
-
-# Devices can then be managed from raw api responses or translated into more readable formats via device module.
-Discover_devices =  DeviceList.From_dict(api_data) # Parses device info which can then be called via print or other functions
-for device in device_list.devices:
-    print(f"ID: {device.id}, Name: {device.name}")
+API._send_command(device_id, capability, command, args)
 ```
 

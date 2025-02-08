@@ -1,49 +1,48 @@
-from .device import BaseDevice
-from .device_types import (
-    DeviceCategory,
-    DeviceCapability,
-    DeviceCommand,
-    PowerState
-)
+# src/utec_py_LF2b2w/devices/switch.py
 
-from ..api import UHomeApi
-from ..exceptions import DeviceError
+from .device import BaseDevice
+from .device_const import SwitchState, DeviceCapability, DeviceCommand
 
 class Switch(BaseDevice):
-    """Represents a Switch/Outlet device in the U-Home API."""
-    
-    @property
-    def category(self) -> DeviceCategory:
-        """Get the device category."""
-        return DeviceCategory.SWITCH if self._discovery_data.get("category") == "switch" else DeviceCategory.PLUG
-
-    @property
-    def power_state(self) -> PowerState:
-        """Get the current power state."""
-        state = self._get_state_value(DeviceCapability.SWITCH, "switch")
-        return PowerState(state) if state else PowerState.UNKNOWN
+    """
+    Represents a Switch device in the U-Home API.
+    Maps to Home Assistant's switch platform.
+    """
 
     @property
     def is_on(self) -> bool:
-        """Check if the switch is turned on."""
-        return self.power_state == PowerState.ON
+        """
+        Get switch state.
+        Maps to Home Assistant's is_on property.
+        """
+        state = self._get_state_value(DeviceCapability.SWITCH, "switch")
+        return state == SwitchState.ON if state is not None else False
+
+    @property
+    def available(self) -> bool:
+        """Device availability for Home Assistant."""
+        return self._state_data is not None
 
     async def turn_on(self) -> None:
-        """Turn on the switch."""
+        """
+        Turn on the switch.
+        Maps to Home Assistant's async_turn_on.
+        """
         command = DeviceCommand(
             capability=DeviceCapability.SWITCH,
-            name="on"
+            name="switch",
+            arguments={"value": SwitchState.ON}
         )
         await self.send_command(command)
 
     async def turn_off(self) -> None:
-        """Turn off the switch."""
+        """
+        Turn off the switch.
+        Maps to Home Assistant's async_turn_off.
+        """
         command = DeviceCommand(
             capability=DeviceCapability.SWITCH,
-            name="off"
+            name="switch",
+            arguments={"value": SwitchState.OFF}
         )
         await self.send_command(command)
-
-    async def update(self) -> None:
-        """Update device state."""
-        await super().update()
