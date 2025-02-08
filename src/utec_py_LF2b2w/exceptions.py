@@ -26,7 +26,3 @@ class DeviceError(Exception):
 class UnsupportedFeatureError(DeviceError):
     """Exception raised when a feature is not supported by the device."""
     pass
-
-class ValidationError(DeviceError):
-    """Exception raised when device validation fails."""
-    pass
