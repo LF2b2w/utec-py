@@ -160,6 +160,20 @@ class BaseDevice:
                 state.get("name") == attribute):
                 return state.get("value")
         return None
+    
+    def get_state_data(self) -> dict:
+        """Get the current device states in a standardized format."""
+        states = {}
+        if self._state_data and "states" in self._state_data:
+            for state in self._state_data["states"]:
+                capability = state.get("capability")
+                name = state.get("name")
+                value = state.get("value")
+                if capability and name:
+                    if capability not in states:
+                        states[capability] = {}
+                    states[capability][name] = value
+        return states
 
     async def send_command(self, command: DeviceCommand) -> None:
         """Send a command to the device.

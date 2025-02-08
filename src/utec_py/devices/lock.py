@@ -8,7 +8,7 @@ from .device_const import (
     DeviceCategory,
 )
 
-class UhomeLock(BaseDevice):
+class Lock(BaseDevice):
 
     @property
     def has_door_sensor(self) -> bool:
