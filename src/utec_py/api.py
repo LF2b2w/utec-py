@@ -62,10 +62,12 @@ class UHomeApi:
             "payload": parameters
         }
 
-    async def _async_make_request(self, **kwargs):
+    async def _async_make_request(self, host: str, **kwargs):
+        if host is None:
+            host = API_BASE_URL
         """Make an authenticated API request"""
 
-        async with self.auth.async_make_auth_request("POST", API_BASE_URL, **kwargs) as response:
+        async with self.auth.async_make_auth_request("POST", host, **kwargs) as response:
             if response.status == 204:
                 return {}
             elif response.status in (200, 201, 202):
