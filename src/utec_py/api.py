@@ -8,7 +8,8 @@ from typing import Dict, Any, TypedDict
 
 from attr import dataclass
 
-from .const import API_BASE_URL
+from utec_py.const import API_BASE_URL
+
 from .exceptions import ApiError
 from .auth import AbstractAuth
 
@@ -62,12 +63,11 @@ class UHomeApi:
             "payload": parameters
         }
 
-    async def _async_make_request(self, host: str, **kwargs):
-        if host is None:
-            host = API_BASE_URL
+    async def _async_make_request(self, **kwargs):
         """Make an authenticated API request"""
 
-        async with self.auth.async_make_auth_request("POST", host, **kwargs) as response:
+        response = await self.auth.async_make_auth_request("POST", API_BASE_URL, **kwargs)
+        try: 
             if response.status == 204:
                 return {}
             elif response.status in (200, 201, 202):
@@ -76,6 +76,8 @@ class UHomeApi:
                 error_text = await response.text()
                 logger.error(f"API error: {response.status} - {error_text}")
                 raise ApiError(response.status, error_text)
+        finally:
+            await response.release()
     
     async def validate_auth(self) -> bool:
         """Validate authentication by making a test request."""

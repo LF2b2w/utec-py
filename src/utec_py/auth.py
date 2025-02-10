@@ -3,15 +3,14 @@ from abc import ABC, abstractmethod
 from aiohttp import ClientResponse, ClientSession
 
 class AbstractAuth(ABC):
-    def __init__(self, websession: ClientSession, host: str):
+    def __init__(self, websession: ClientSession):
         self.websession = websession
-        self.host = host
 
     @abstractmethod
     async def async_get_access_token(self) -> str:
         """Return a valid access token (refresh if needed)"""
     
-    async def async_make_auth_request(self, method, **kwargs) -> ClientResponse:
+    async def async_make_auth_request(self, method, host:str, **kwargs) -> ClientResponse:
         if headers := kwargs.pop("headers", {}):
             headers = dict(headers)
         
@@ -20,7 +19,7 @@ class AbstractAuth(ABC):
 
         return await self.websession.request(
             method,
-            self.host,
+            host,
             **kwargs,
-            header =headers,
+            headers = headers,
             )
