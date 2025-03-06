@@ -1,14 +1,14 @@
-"""Abstraction layer for device interaction - Lock"""
+"""Abstraction layer for device interaction - Lock."""
 
 from .device import BaseDevice
-from .device_const import (
-    LockState,
-    DeviceCapability,
-    DeviceCommand,
-    DeviceCategory,
-)
+from .device_const import DeviceCapability, DeviceCategory, DeviceCommand#, #LockState
+
 
 class Lock(BaseDevice):
+    """Represents a Switch device in the U-Home API.
+
+    Maps to Home Assistant's switch platform.
+    """
 
     @property
     def has_door_sensor(self) -> bool:
@@ -28,20 +28,28 @@ class Lock(BaseDevice):
         return DeviceCategory.LOCK
 
     @property
-    def lock_state(self) -> LockState:
+    def lock_state(self) -> str:
         """Get the current lock state."""
         state = self._get_state_value(DeviceCapability.LOCK, "lockState")
-        return LockState(state) if state else LockState.UNKNOWN
+        return state if state else "Unkown"
 
     @property
     def battery_level(self) -> int | None:
-        """Get the current battery level (0-100)."""
-        return self._get_state_value(DeviceCapability.BATTERY_LEVEL, "level")
+        """Get the current battery level (1-5)."""
+        BattLevel = self._get_state_value(DeviceCapability.BATTERY_LEVEL, "level")
+        Battery_states = {
+            1: "Critically Low",
+            2: "Low",
+            3: "Medium",
+            4: "High",
+            5: "Full"
+        }
+        return Battery_states.get(BattLevel)
 
     @property
     def is_locked(self) -> bool:
         """Check if the lock is in locked state."""
-        return self.lock_state == LockState.LOCKED
+        return self.lock_state == "Locked"
 
     @property
     def is_door_closed(self) -> bool | None:
@@ -52,18 +60,12 @@ class Lock(BaseDevice):
 
     async def lock(self) -> None:
         """Lock the device."""
-        command = DeviceCommand(
-            capability=DeviceCapability.LOCK,
-            name="lock"
-        )
+        command = DeviceCommand(capability=DeviceCapability.LOCK, name="lock")
         await self.send_command(command)
 
     async def unlock(self) -> None:
         """Unlock the device."""
-        command = DeviceCommand(
-            capability=DeviceCapability.LOCK,
-            name="unlock"
-        )
+        command = DeviceCommand(capability=DeviceCapability.LOCK, name="unlock")
         await self.send_command(command)
 
     async def update(self) -> None:

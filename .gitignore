@@ -3,6 +3,10 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+## Additions
+pypi.py
+test.py
+
 # User-specific files
 *.rsuser
 *.suo
@@ -428,12 +432,16 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+.pypirc
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
+
+test.py
+pypi.py
 
 # Installer logs
 pip-log.txt
