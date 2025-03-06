@@ -2,12 +2,14 @@
 
 from dataclasses import dataclass
 from datetime import datetime
+import logging
 from typing import Any, Dict, Set
 
 from ..api import UHomeApi
 from ..exceptions import DeviceError
 from .device_const import HANDLE_TYPE_CAPABILITIES, DeviceCategory, DeviceCommand
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class DeviceInfo:
@@ -120,9 +122,10 @@ class BaseDevice:
     @property
     def available(self) -> bool:
         """Indicate if the device is available."""
-        if not self._state_data:
-            return False
-        return self._get_state_value("st.healthCheck", "status") == "online"
+        status = self._get_state_value("st.healthCheck", "status")
+        if status is None:
+            status = self._get_state_value("st.healthcheck", "status")
+        return status is not None and status.lower() == "online"
 
     @property
     def attributes(self) -> Dict[str, Any]:
@@ -158,10 +161,12 @@ class BaseDevice:
             The state value if found, None otherwise
 
         """
-        if not self._state_data:
-            return None
 
         states = self._state_data.get("states", [])
+
+        if not self._state_data:
+            raise DeviceError("State data missing 'states' key for device: %s", self.device_id)
+
         for state in states:
             if state.get("capability") == capability and state.get("name") == attribute:
                 return state.get("value")
@@ -191,17 +196,18 @@ class BaseDevice:
             DeviceError: If command sending fails
 
         """
+        logger.debug("Sending command %s for device ID %s", command.name, self.device_id)
         try:
-            response = await self._api.send_command(
+            await self._api.send_command(
                 self.device_id, command.capability, command.name, command.arguments
             )
 
             # Update state data if included in response
-            if response and "payload" in response:
-                devices = response["payload"].get("devices", [])
-                if devices and devices[0]["id"] == self.device_id:
-                    self._state_data = devices[0]
-                    self._last_update = datetime.now()
+            #if response and "payload" in response:
+            #    devices = response["payload"].get("devices", [])
+            #    if devices and devices[0]["id"] == self.device_id:
+            #        self._state_data = devices[0]
+            #        self._last_update = datetime.now()
 
         except Exception as err:
             raise DeviceError(f"Failed to send command to device: {err}") from err
@@ -213,6 +219,7 @@ class BaseDevice:
             DeviceError: If update fails
 
         """
+        logger.debug("updating device %s", self.device_id)
         try:
             response = await self._api.query_device(self.device_id)
             if response and "payload" in response:

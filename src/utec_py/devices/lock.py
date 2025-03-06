@@ -49,7 +49,8 @@ class Lock(BaseDevice):
     @property
     def is_locked(self) -> bool:
         """Check if the lock is in locked state."""
-        return self.lock_state == "Locked"
+        lock_state = self.lock_state
+        return lock_state is not None and lock_state.lower() == "locked"
 
     @property
     def is_door_closed(self) -> bool | None:
