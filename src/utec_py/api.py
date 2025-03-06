@@ -89,7 +89,7 @@ class UHomeApi:
         """Discover available devices."""
         logger.debug("Discovering devices")
         payload = await self.async_create_request(
-            ApiNamespace.DEVICE, ApiOperation.DISCOVERY, None
+            ApiNamespace.DEVICE, ApiOperation.DISCOVERY, {}
         )
         return await self._async_make_request(json=payload)
 
