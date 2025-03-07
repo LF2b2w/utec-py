@@ -34,7 +34,7 @@ class Lock(BaseDevice):
         return state if state else "Unkown"
 
     @property
-    def battery_level(self) -> int | None:
+    def battery_status(self) -> str | None:
         """Get the current battery level (1-5)."""
         BattLevel = self._get_state_value(DeviceCapability.BATTERY_LEVEL, "level")
         Battery_states = {
@@ -45,6 +45,15 @@ class Lock(BaseDevice):
             5: "Full"
         }
         return Battery_states.get(BattLevel)
+    
+    @property
+    def battery_level(self) -> int | None:
+        """Get the current battery level and convert to percent"""
+        level = self._get_state_value(DeviceCapability.BATTERY_LEVEL, "level")
+        if level is None:
+            return None
+        batt_map = {1: 10, 2:30, 3:50, 4:70, 5:100}
+        return batt_map.get(level, 0)
 
     @property
     def is_locked(self) -> bool:

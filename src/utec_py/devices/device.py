@@ -122,7 +122,7 @@ class BaseDevice:
         """Indicate if the device is available."""
         if not self._state_data:
             return False
-        return self._get_state_value("st.healthCheck", "status") == "online"
+        return self._get_state_value("st.healthCheck", "status") == "Online"
 
     @property
     def attributes(self) -> Dict[str, Any]:
