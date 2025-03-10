@@ -122,10 +122,16 @@ class BaseDevice:
     @property
     def available(self) -> bool:
         """Indicate if the device is available."""
+<<<<<<< HEAD
         status = self._get_state_value("st.healthCheck", "status")
         if status is None:
             status = self._get_state_value("st.healthcheck", "status")
         return status is not None and status.lower() == "online"
+=======
+        if not self._state_data:
+            return False
+        return self._get_state_value("st.healthCheck", "status") == "Online"
+>>>>>>> 98cb615b766a08085b693e92cf1b5b427583c90c
 
     @property
     def attributes(self) -> Dict[str, Any]:
