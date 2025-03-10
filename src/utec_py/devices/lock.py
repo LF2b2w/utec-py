@@ -59,14 +59,14 @@ class Lock(BaseDevice):
     def is_locked(self) -> bool:
         """Check if the lock is in locked state."""
         lock_state = self.lock_state
-        return lock_state is not None and lock_state.lower() == "locked"
+        return lock_state is not None and lock_state == "Locked"
 
     @property
     def is_door_closed(self) -> bool | None:
         """Check if the door is closed (binary sensor)."""
         if not self.has_door_sensor:
             return None
-        return self.door_state == "closed"
+        return self.door_state == "Closed"
 
     async def lock(self) -> None:
         """Lock the device."""
