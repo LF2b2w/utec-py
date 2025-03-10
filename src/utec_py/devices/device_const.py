@@ -39,13 +39,13 @@ class DeviceCategory(str, Enum):
     UNKNOWN = "unknown"
 
 
-#class LockState(IntEnum):
-#    """Lock state values from API."""
-#
-#    LOCKED = 1
-#    UNLOCKED = 2
-#    JAMMED = 3
-#    UNKNOWN = 4
+class LockState(str, Enum):
+    """Lock state values from API."""
+
+    LOCKED = "Locked"
+    UNLOCKED = "Unlocked"
+    JAMMED = "Jammed"
+    UNKNOWN = "Unknown"
 
 class DoorState(IntEnum):
     """Door state values from API."""

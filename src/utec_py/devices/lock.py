@@ -1,7 +1,7 @@
 """Abstraction layer for device interaction - Lock."""
 
 from .device import BaseDevice
-from .device_const import DeviceCapability, DeviceCategory, DeviceCommand#, #LockState
+from .device_const import DeviceCapability, DeviceCategory, DeviceCommand, LockState
 
 
 class Lock(BaseDevice):
@@ -58,8 +58,8 @@ class Lock(BaseDevice):
     @property
     def is_locked(self) -> bool:
         """Check if the lock is in locked state."""
-        lock_state = self.lock_state
-        return lock_state is not None and lock_state == "Locked"
+        state = self._get_state_value(DeviceCapability.LOCK, "lockstate")
+        return state == LockState.LOCKED if state is not None else False
 
     @property
     def is_door_closed(self) -> bool | None:
