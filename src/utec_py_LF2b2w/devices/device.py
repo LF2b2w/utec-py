@@ -1,33 +1,36 @@
 """Base device implementation for U-Home API devices."""
-from typing import Optional, Dict, Any, Set
+
 from dataclasses import dataclass
 from datetime import datetime
+import logging
+from typing import Any, Dict, Set
 
-from .device_const import (
-    DeviceCommand,
-    DeviceCategory,
-    HANDLE_TYPE_CAPABILITIES
-)
 from ..api import UHomeApi
 from ..exceptions import DeviceError
+from .device_const import HANDLE_TYPE_CAPABILITIES, DeviceCategory, DeviceCommand
+
+logger = logging.getLogger(__name__)
+
 
 @dataclass
 class DeviceInfo:
     """Class that represents device information in the U-Home API."""
+
     manufacturer: str
     model: str
     hw_version: str
-    serial_number: Optional[str] = None
+    serial_number: str | None = None
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'DeviceInfo':
+    def from_dict(cls, data: Dict[str, Any]) -> "DeviceInfo":
         """Create DeviceInfo instance from API response dictionary."""
         return cls(
             manufacturer=data.get("manufacturer", ""),
             model=data.get("model", ""),
             hw_version=data.get("hwVersion", ""),
-            serial_number=data.get("serialNumber")
+            serial_number=data.get("serialNumber"),
         )
+
 
 class BaseDevice:
     """Base class for all U-Home devices."""
@@ -41,11 +44,12 @@ class BaseDevice:
 
         Raises:
             DeviceError: If required device information is missing
+
         """
         self._api = api
         self._discovery_data = discovery_data
-        self._state_data: Optional[Dict] = None
-        self._last_update: Optional[datetime] = None
+        self._state_data: Dict | None = None
+        self._last_update: datetime | None = None
 
         # Extract required fields
         try:
@@ -60,12 +64,16 @@ class BaseDevice:
 
             # Get attributes and capabilities
             self._attributes = discovery_data.get("attributes", {})
-            self._supported_capabilities = HANDLE_TYPE_CAPABILITIES.get(self._handle_type, set())
+            self._supported_capabilities = HANDLE_TYPE_CAPABILITIES.get(
+                self._handle_type, set()
+            )
 
             self._validate_capabilities()
 
         except KeyError as err:
-            raise DeviceError(f"Missing required field in discovery data: {err}")
+            raise DeviceError(
+                f"Missing required field in discovery data: {err}"
+            ) from err
 
     @property
     def device_id(self) -> str:
@@ -103,7 +111,7 @@ class BaseDevice:
         return self._device_info.hw_version
 
     @property
-    def serial_number(self) -> str|None:
+    def serial_number(self) -> str | None:
         """Get the device serial number."""
         return self._device_info.serial_number
 
@@ -117,7 +125,7 @@ class BaseDevice:
         """Indicate if the device is available."""
         if not self._state_data:
             return False
-        return self._get_state_value("st.healthCheck", "status") == "online"
+        return self._get_state_value("st.healthCheck", "status") == "Online"
 
     @property
     def attributes(self) -> Dict[str, Any]:
@@ -133,6 +141,7 @@ class BaseDevice:
 
         Raises:
             DeviceError: If device is missing required capabilities
+
         """
         required_capabilities = HANDLE_TYPE_CAPABILITIES.get(self._handle_type, set())
         if not required_capabilities.issubset(self._supported_capabilities):
@@ -150,16 +159,34 @@ class BaseDevice:
 
         Returns:
             The state value if found, None otherwise
+
         """
-        if not self._state_data:
-            return None
 
         states = self._state_data.get("states", [])
+
+        if not self._state_data:
+            raise DeviceError(
+                "State data missing 'states' key for device: %s", self.device_id
+            )
+
         for state in states:
-            if (state.get("capability") == capability and
-                state.get("name") == attribute):
+            if state.get("capability") == capability and state.get("name") == attribute:
                 return state.get("value")
         return None
+
+    def get_state_data(self) -> dict:
+        """Get the current device states in a standardized format."""
+        states = {}
+        if self._state_data and "states" in self._state_data:
+            for state in self._state_data["states"]:
+                capability = state.get("capability")
+                name = state.get("name")
+                value = state.get("value")
+                if capability and name:
+                    if capability not in states:
+                        states[capability] = {}
+                    states[capability][name] = value
+        return states
 
     async def send_command(self, command: DeviceCommand) -> None:
         """Send a command to the device.
@@ -169,21 +196,17 @@ class BaseDevice:
 
         Raises:
             DeviceError: If command sending fails
+
         """
+        logger.debug(
+            "Sending command %s for device ID %s", command.name, self.device_id
+        )
         try:
-            response = await self._api.send_command(
-                self.device_id,
-                command.capability,
-                command.name,
-                command.arguments
+            await self._api.send_command(
+                self.device_id, command.capability, command.name, command.arguments
             )
 
-            # Update state data if included in response
-            if response and "payload" in response:
-                devices = response["payload"].get("devices", [])
-                if devices and devices[0]["id"] == self.device_id:
-                    self._state_data = devices[0]
-                    self._last_update = datetime.now()
+            self._last_update = datetime.now()
 
         except Exception as err:
             raise DeviceError(f"Failed to send command to device: {err}") from err
@@ -193,13 +216,20 @@ class BaseDevice:
 
         Raises:
             DeviceError: If update fails
+
         """
+        logger.debug("updating device %s", self.device_id)
         try:
             response = await self._api.query_device(self.device_id)
             if response and "payload" in response:
                 devices = response["payload"].get("devices", [])
                 if devices:
                     self._state_data = devices[0]
+                    logger.debug(
+                        "Updated device %s with data: %s",
+                        self.device_id,
+                        self._state_data,
+                    )
                     self._last_update = datetime.now()
 
         except Exception as err:
