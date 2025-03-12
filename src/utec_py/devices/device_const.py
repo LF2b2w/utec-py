@@ -18,14 +18,14 @@ class HandleType(str, Enum):
 class DeviceCapability(str, Enum):
     """Device capabilities supported by the API."""
 
-    SWITCH = "st.Switch"
-    LOCK = "st.Lock"
-    BATTERY_LEVEL = "st.BatteryLevel"
-    LOCK_USER = "st.LockUser"
-    DOOR_SENSOR = "st.DoorSensor"
-    BRIGHTNESS = "st.Brightness"
-    COLOR = "st.Color"
-    COLOR_TEMPERATURE = "st.ColorTemperature"
+    SWITCH = "st.switch"
+    LOCK = "st.lock"
+    BATTERY_LEVEL = "st.batteryLevel"
+    LOCK_USER = "st.lockUser"
+    DOOR_SENSOR = "st.doorSensor"
+    BRIGHTNESS = "st.brightness"
+    COLOR = "st.color"
+    COLOR_TEMPERATURE = "st.colorTemperature"
     HEALTH_CHECK = "st.healthCheck"
 
 
@@ -51,6 +51,7 @@ class LockState(str, Enum):
 class LockMode(IntEnum):
     """Lock mode vlaues from API."""
 
+    UNSURE = 0
     LOCKED = 1
     UNLOCKED = 2
     JAMMED = 3

@@ -14,7 +14,8 @@ class AbstractAuth(ABC):
 
     """
 
-    def __init__(self, websession: ClientSession):
+    def __init__(self, websession: ClientSession) -> None:
+        """Initialise auth class."""
         self.websession = websession
 
     @abstractmethod
@@ -28,10 +29,12 @@ class AbstractAuth(ABC):
         if headers := kwargs.pop("headers", {}):
             headers = dict(headers)
 
-        headers.update({
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        })
+        headers.update(
+            {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            }
+        )
 
         access_token = await self.async_get_access_token()
         headers["authorization"] = f"Bearer {access_token}"

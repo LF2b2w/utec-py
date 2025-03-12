@@ -35,7 +35,7 @@ class DeviceInfo:
 class BaseDevice:
     """Base class for all U-Home devices."""
 
-    def __init__(self, discovery_data: dict, api: UHomeApi):
+    def __init__(self, discovery_data: dict, api: UHomeApi) -> None:
         """Initialize the device with discovery data.
 
         Args:
@@ -161,17 +161,25 @@ class BaseDevice:
             The state value if found, None otherwise
 
         """
+        if not self._state_data:
+            logger.debug("No state data available for device %s", self.device_id)
+            return None
 
         states = self._state_data.get("states", [])
 
-        if not self._state_data:
-            raise DeviceError(
-                "State data missing 'states' key for device: %s", self.device_id
-            )
+        if not states:
+            logger.debug("Empty states array for device %s", self.device_id)
+            return None
 
         for state in states:
             if state.get("capability") == capability and state.get("name") == attribute:
+                logger.debug(
+                    "Found %s.%s = %s", capability, attribute, state.get("value")
+                )
                 return state.get("value")
+        logger.debug(
+            "State %s.%s not found for device %s", capability, attribute, self.device_id
+        )
         return None
 
     def get_state_data(self) -> dict:

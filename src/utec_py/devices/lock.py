@@ -25,7 +25,7 @@ class Lock(BaseDevice):
     def lock_state(self) -> str:
         """Get the current lock state."""
         state = self._get_state_value(DeviceCapability.LOCK, "lockState")
-        return state if state else "Unkown"
+        return state if state else "Unknown"
 
     @property
     def has_door_sensor(self) -> bool:
@@ -48,6 +48,7 @@ class Lock(BaseDevice):
             LockMode.UNLOCKED: "Unlocked",
             LockMode.JAMMED: "Jammed",
             LockMode.UNKNOWN: "Unknown",
+            LockMode.UNSURE: "Locked",
         }
         return LOCK_STATE_MAP.get(state)
 
