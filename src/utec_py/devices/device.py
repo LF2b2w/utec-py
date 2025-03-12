@@ -11,6 +11,7 @@ from .device_const import HANDLE_TYPE_CAPABILITIES, DeviceCategory, DeviceComman
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class DeviceInfo:
     """Class that represents device information in the U-Home API."""
@@ -164,7 +165,9 @@ class BaseDevice:
         states = self._state_data.get("states", [])
 
         if not self._state_data:
-            raise DeviceError("State data missing 'states' key for device: %s", self.device_id)
+            raise DeviceError(
+                "State data missing 'states' key for device: %s", self.device_id
+            )
 
         for state in states:
             if state.get("capability") == capability and state.get("name") == attribute:
@@ -195,18 +198,15 @@ class BaseDevice:
             DeviceError: If command sending fails
 
         """
-        logger.debug("Sending command %s for device ID %s", command.name, self.device_id)
+        logger.debug(
+            "Sending command %s for device ID %s", command.name, self.device_id
+        )
         try:
             await self._api.send_command(
                 self.device_id, command.capability, command.name, command.arguments
             )
 
-            # Update state data if included in response
-            #if response and "payload" in response:
-            #    devices = response["payload"].get("devices", [])
-            #    if devices and devices[0]["id"] == self.device_id:
-            #        self._state_data = devices[0]
-            #        self._last_update = datetime.now()
+            self._last_update = datetime.now()
 
         except Exception as err:
             raise DeviceError(f"Failed to send command to device: {err}") from err
@@ -225,6 +225,11 @@ class BaseDevice:
                 devices = response["payload"].get("devices", [])
                 if devices:
                     self._state_data = devices[0]
+                    logger.debug(
+                        "Updated device %s with data: %s",
+                        self.device_id,
+                        self._state_data,
+                    )
                     self._last_update = datetime.now()
 
         except Exception as err:

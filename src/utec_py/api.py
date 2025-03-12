@@ -1,6 +1,7 @@
 """Api class for Uhome/Utec API."""
 
 from enum import Enum
+import json
 import logging
 from typing import Any, Dict, TypedDict
 from uuid import uuid4
@@ -44,7 +45,7 @@ class ApiRequest(TypedDict):
 class UHomeApi:
     """U-Home API client implementation."""
 
-    def __init__(self, Auth: AbstractAuth):
+    def __init__(self, Auth: AbstractAuth) -> None:
         """Initialise the API."""
         self.auth = Auth
 
@@ -96,7 +97,7 @@ class UHomeApi:
     async def get_device_state(
         self, device_ids: list, custom_data: dict | None
     ) -> Dict[str, Any]:
-        """Query device status."""
+        """Get device status - supports multiple devices at once and custom data."""
         devices = []
         for device_id in device_ids:
             device = {"id": device_id}
@@ -108,14 +109,19 @@ class UHomeApi:
             ApiNamespace.DEVICE, ApiOperation.QUERY, params
         )
         return await self._async_make_request(json=payload)
-    
+
     async def query_device(self, device_id: str):
+        """Query single device."""
         device = [{"id": device_id}]
         params = {"devices": device}
         payload = await self.async_create_request(
             ApiNamespace.DEVICE, ApiOperation.QUERY, params
         )
-        logger.debug("Querying device with device ID %s and payload %s", device_id, payload)
+        logger.debug(
+            "Querying device with device ID %s and payload %s",
+            device_id,
+            json.dumps(payload, default=str),
+        )
         return await self._async_make_request(json=payload)
 
     async def send_command(
@@ -131,7 +137,12 @@ class UHomeApi:
         payload = await self.async_create_request(
             ApiNamespace.DEVICE, ApiOperation.COMMAND, params
         )
-        logger.debug("Sending Command %s to device %s, with payload %s", command, device_id, payload)
+        logger.debug(
+            "Sending Command %s to device %s, with payload %s",
+            command,
+            device_id,
+            json.dumps(payload, default=str),
+        )
         return await self._async_make_request(json=payload)
 
     async def close(self):

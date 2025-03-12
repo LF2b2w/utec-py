@@ -32,11 +32,11 @@ class DeviceCapability(str, Enum):
 class DeviceCategory(str, Enum):
     """Device categories as returned by the API."""
 
-    LOCK = "smartlock"
-    PLUG = "smartplug"
-    SWITCH = "smartswitch"
-    LIGHT = "light"
-    UNKNOWN = "unknown"
+    LOCK = "SmartLock"
+    PLUG = "SmartPlug"
+    SWITCH = "SmartSwitch"
+    LIGHT = "Light"
+    UNKNOWN = "Unknown"
 
 
 class LockState(str, Enum):
@@ -46,6 +46,16 @@ class LockState(str, Enum):
     UNLOCKED = "Unlocked"
     JAMMED = "Jammed"
     UNKNOWN = "Unknown"
+
+
+class LockMode(IntEnum):
+    """Lock mode vlaues from API."""
+
+    LOCKED = 1
+    UNLOCKED = 2
+    JAMMED = 3
+    UNKNOWN = 4
+
 
 class DoorState(IntEnum):
     """Door state values from API."""
@@ -98,7 +108,7 @@ class ColorState:
 
 
 @dataclass
-class ColorTemperatureRange:
+class ColorTemperatureRange(int):
     """Represents color temperature range for lights."""
 
     min: int  # Minimum temperature in Kelvin
@@ -106,7 +116,7 @@ class ColorTemperatureRange:
     step: int = 1  # Step size for temperature adjustment
 
 
-class BrightnessRange:
+class BrightnessRange(int):
     """Constants for brightness range."""
 
     MIN = 0
@@ -114,7 +124,7 @@ class BrightnessRange:
     STEP = 1
 
 
-class ColorTempRange:
+class ColorTempRange(int):
     """Constants for color temperature range in Kelvin."""
 
     MIN = 2000

@@ -1,53 +1,44 @@
+"""Abstraction layer for device interaction - Light."""
 # src/utec_py_LF2b2w/devices/light.py
 
-from typing import Optional, Tuple
+from typing import Tuple  # noqa: UP035
+
 from .device import BaseDevice
 from .device_const import (
-    SwitchState,
+    BrightnessRange,
+    ColorState,
+    ColorTempRange,
     DeviceCapability,
     DeviceCommand,
-    ColorState,
-    BrightnessRange,
-    ColorTempRange
+    SwitchState,
 )
 
+
 class Light(BaseDevice):
-    """
-    Represents a Light device in the U-Home API.
+    """Represents a Light device in the U-Home API.
+
     Maps to Home Assistant's light platform.
     """
 
     @property
     def is_on(self) -> bool:
-        """
-        Get light state.
-        Maps to Home Assistant's is_on property.
-        """
+        """Get light state."""
         state = self._get_state_value(DeviceCapability.SWITCH, "switch")
         return state == SwitchState.ON if state is not None else False
 
     @property
     def brightness(self) -> int | None:
-        """
-        Get brightness level (0-100).
-        Maps to Home Assistant's brightness property (will need conversion to 0-255).
-        """
+        """Get brightness level (0-100)."""
         return self._get_state_value(DeviceCapability.BRIGHTNESS, "level")
 
     @property
-    def color_temp(self) -> Optional[int]:
-        """
-        Get color temperature in Kelvin.
-        Maps to Home Assistant's color_temp property (will need conversion to mireds).
-        """
-        return self._get_state_value(DeviceCapability.COLOR_TEMP, "temperature")
+    def color_temp(self) -> int | None:
+        """Get color temperature in Kelvin."""
+        return self._get_state_value(DeviceCapability.COLOR_TEMPERATURE, "temperature")
 
     @property
-    def rgb_color(self) -> Optional[Tuple[int, int, int]]:
-        """
-        Get RGB color.
-        Maps to Home Assistant's rgb_color property.
-        """
+    def rgb_color(self) -> Tuple[int, int, int] | None:
+        """Get RGB color."""
         color_data = self._get_state_value(DeviceCapability.COLOR, "color")
         if color_data:
             color = ColorState.from_dict(color_data)
@@ -62,20 +53,17 @@ class Light(BaseDevice):
             features.add("brightness")
         if self.has_capability(DeviceCapability.COLOR):
             features.add("color")
-        if self.has_capability(DeviceCapability.COLOR_TEMP):
+        if self.has_capability(DeviceCapability.COLOR_TEMPERATURE):
             features.add("color_temp")
         return features
 
     async def turn_on(self, **kwargs) -> None:
-        """
-        Turn on the light with optional attributes.
-        Maps to Home Assistant's async_turn_on.
-        """
+        """Turn on the light with optional attributes."""
         # Basic on command
         command = DeviceCommand(
             capability=DeviceCapability.SWITCH,
             name="switch",
-            arguments={"value": SwitchState.ON}
+            arguments={"value": SwitchState.ON},
         )
         await self.send_command(command)
 
@@ -88,14 +76,11 @@ class Light(BaseDevice):
             await self.set_rgb_color(*kwargs["rgb_color"])
 
     async def turn_off(self) -> None:
-        """
-        Turn off the light.
-        Maps to Home Assistant's async_turn_off.
-        """
+        """Turn off the light."""
         command = DeviceCommand(
             capability=DeviceCapability.SWITCH,
             name="switch",
-            arguments={"value": SwitchState.OFF}
+            arguments={"value": SwitchState.OFF},
         )
         await self.send_command(command)
 
@@ -108,7 +93,7 @@ class Light(BaseDevice):
         command = DeviceCommand(
             capability=DeviceCapability.BRIGHTNESS,
             name="level",
-            arguments={"value": brightness}
+            arguments={"value": brightness},
         )
         await self.send_command(command)
 
@@ -119,9 +104,9 @@ class Light(BaseDevice):
                 f"Color temperature must be between {ColorTempRange.MIN}K and {ColorTempRange.MAX}K"
             )
         command = DeviceCommand(
-            capability=DeviceCapability.COLOR_TEMP,
+            capability=DeviceCapability.COLOR_TEMPERATURE,
             name="temperature",
-            arguments={"value": temp}
+            arguments={"value": temp},
         )
         await self.send_command(command)
 
@@ -131,6 +116,6 @@ class Light(BaseDevice):
         command = DeviceCommand(
             capability=DeviceCapability.COLOR,
             name="color",
-            arguments={"value": color.to_dict()}
+            arguments={"value": color.to_dict()},
         )
         await self.send_command(command)

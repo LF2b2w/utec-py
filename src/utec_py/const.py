@@ -1,4 +1,5 @@
 """U-Home API constants."""
+
 from enum import Enum
 from typing import TypedDict, Optional
 
@@ -13,20 +14,24 @@ ATTR_CATEGORY = "category"
 ATTR_DEVICE_INFO = "deviceInfo"
 ATTR_ATTRIBUTES = "attributes"
 
+
 class ApiNamespace(str, Enum):
     DEVICE = "Uhome.Device"
     USER = "Uhome.User"
+
 
 class ApiOperation(str, Enum):
     DISCOVERY = "Discovery"
     QUERY = "Query"
     COMMAND = "Command"
 
+
 class ApiHeader(TypedDict):
     namespace: str
     name: str
     messageID: str
     payloadVersion: str
+
 
 class ApiRequest(TypedDict):
     header: ApiHeader

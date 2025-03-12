@@ -1,42 +1,71 @@
-"""Abstraction layer for device interaction - Switch."""
-
-# src/utec_py_LF2b2w/devices/switch.py
+"""Abstraction layer for device interaction - Lock"""
 
 from .device import BaseDevice
-from .device_const import DeviceCapability, DeviceCommand, SwitchState
+from .device_const import (
+    LockState,
+    DeviceCapability,
+    DeviceCommand,
+    DeviceCategory,
+)
 
-
-class Switch(BaseDevice):
-    """Represents a Switch device in the U-Home API.
-
-    Maps to Home Assistant's switch platform.
-    """
-
-    @property
-    def is_on(self) -> bool:
-        """Get switch state."""
-        state = self._get_state_value(DeviceCapability.SWITCH, "switch")
-        return state == SwitchState.ON if state is not None else False
+class UhomeLock(BaseDevice):
 
     @property
-    def available(self) -> bool:
-        """Device availability for Home Assistant."""
-        return self._state_data is not None
+    def has_door_sensor(self) -> bool:
+        """Check if the lock has a door sensor capability."""
+        return self.has_capability(DeviceCapability.DOOR_SENSOR)
 
-    async def turn_on(self) -> None:
-        """Turn on the switch."""
+    @property
+    def door_state(self) -> str | None:
+        """Get the door state if door sensor is present."""
+        if not self.has_door_sensor:
+            return None
+        return self._get_state_value(DeviceCapability.DOOR_SENSOR, "sensorState")
+
+    @property
+    def category(self) -> DeviceCategory:
+        """Get the device category."""
+        return DeviceCategory.LOCK
+
+    @property
+    def lock_state(self) -> LockState:
+        """Get the current lock state."""
+        state = self._get_state_value(DeviceCapability.LOCK, "lockState")
+        return LockState(state) if state else LockState.UNKNOWN
+
+    @property
+    def battery_level(self) -> int | None:
+        """Get the current battery level (0-100)."""
+        return self._get_state_value(DeviceCapability.BATTERY_LEVEL, "level")
+
+    @property
+    def is_locked(self) -> bool:
+        """Check if the lock is in locked state."""
+        return self.lock_state == LockState.LOCKED
+
+    @property
+    def is_door_closed(self) -> bool | None:
+        """Check if the door is closed (binary sensor)."""
+        if not self.has_door_sensor:
+            return None
+        return self.door_state == "closed"
+
+    async def lock(self) -> None:
+        """Lock the device."""
         command = DeviceCommand(
-            capability=DeviceCapability.SWITCH,
-            name="switch",
-            arguments={"value": SwitchState.ON},
+            capability=DeviceCapability.LOCK,
+            name="lock"
         )
         await self.send_command(command)
 
-    async def turn_off(self) -> None:
-        """Turn off the switch."""
+    async def unlock(self) -> None:
+        """Unlock the device."""
         command = DeviceCommand(
-            capability=DeviceCapability.SWITCH,
-            name="switch",
-            arguments={"value": SwitchState.OFF},
+            capability=DeviceCapability.LOCK,
+            name="unlock"
         )
         await self.send_command(command)
+
+    async def update(self) -> None:
+        """Update device state."""
+        await super().update()
