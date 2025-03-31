@@ -35,7 +35,7 @@ class DeviceCategory(str, Enum):
     LOCK = "SmartLock"
     PLUG = "SmartPlug"
     SWITCH = "SmartSwitch"
-    LIGHT = "Light"
+    LIGHT = "LIGHT"
     UNKNOWN = "Unknown"
 
 

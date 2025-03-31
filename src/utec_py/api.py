@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 class ApiNamespace(str, Enum):
     DEVICE = "Uhome.Device"
     USER = "Uhome.User"
+    CONFIGURE = "Uhome.Configure"
 
 
 @dataclass
@@ -26,6 +27,7 @@ class ApiOperation(str, Enum):
     DISCOVERY = "Discovery"
     QUERY = "Query"
     COMMAND = "Command"
+    SET = "Set"
 
 
 @dataclass
@@ -144,6 +146,24 @@ class UHomeApi:
             json.dumps(payload, default=str),
         )
         return await self._async_make_request(json=payload)
+
+    async def set_push_status(self, access_token: str, uri: str):
+        """Register URI for push device updates
+
+        Args:
+            access_token (str): Ouath2 Access token
+            uri (str): URL to receive push updates - must be HTTP/HTTPS with valid cert
+        """
+        params = {"configure": {"notification": {"access_token": access_token, "url": uri}}}
+        payload = await self.async_create_request(
+            ApiNamespace.CONFIGURE, ApiOperation.SET, params
+            )
+        logger.debug(
+            "Setting push update url. URL: %s",
+            uri
+        )
+        return await self._async_make_request(json=payload)
+
 
     async def close(self):
         """Close the API client."""

@@ -243,6 +243,23 @@ class BaseDevice:
         except Exception as err:
             raise DeviceError(f"Failed to update device state: {err}") from err
 
+    async def update_state_data(self, push_data: dict ) -> Dict[str, Any]:
+        """Update device data from push data"""
+        if "states" in push_data:
+            self._state_data = push_data
+            logger.debug(
+                "Updated device %s with push data: %s",
+                self.device_id,
+                push_data
+            )
+            self._last_update = datetime.now()
+        else:
+            logger.warning(
+                "Invalid push data format for device %s: %s",
+                self.device_id,
+                push_data
+            )
+
     @property
     def device_info(self) -> Dict[str, Any]:
         """Get device information for Home Assistant."""
