@@ -243,7 +243,7 @@ class BaseDevice:
         except Exception as err:
             raise DeviceError(f"Failed to update device state: {err}") from err
 
-    async def update_state_data(self, push_data: dict ) -> Dict[str, Any]:
+    async def update_state_data(self, push_data: dict ) -> Dict[str, Any] | None:
         """Update device data from push data"""
         if "states" in push_data:
             self._state_data = push_data

@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from enum import Enum, IntEnum
-from typing import Any, Dict, Set
+from typing import Any, Dict, Optional, Set
 
 
 class HandleType(str, Enum):
@@ -80,11 +80,14 @@ class DeviceCommand:
 
     capability: str
     name: str
-    arguments: Dict[str, Any] | None = None
+    arguments: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert command to API-compatible dictionary format."""
-        command_dict = {"capability": self.capability, "name": self.name}
+        command_dict: Dict[str, Any] = {
+            "capability": self.capability, 
+            "name": self.name
+        }
         if self.arguments:
             command_dict["arguments"] = self.arguments
         return command_dict

@@ -40,7 +40,7 @@ class Lock(BaseDevice):
         return self._get_state_value(DeviceCapability.DOOR_SENSOR, "SensorState")
 
     @property
-    def lock_mode(self) -> str:
+    def lock_mode(self) -> str | None:
         """Get the current lock mode."""
         state = self._get_state_value(DeviceCapability.LOCK, "lockMode")
         LOCK_STATE_MAP = {

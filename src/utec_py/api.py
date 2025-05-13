@@ -15,14 +15,12 @@ from .exceptions import ApiError
 logger = logging.getLogger(__name__)
 
 
-@dataclass
 class ApiNamespace(str, Enum):
     DEVICE = "Uhome.Device"
     USER = "Uhome.User"
     CONFIGURE = "Uhome.Configure"
 
 
-@dataclass
 class ApiOperation(str, Enum):
     DISCOVERY = "Discovery"
     QUERY = "Query"
@@ -52,7 +50,9 @@ class UHomeApi:
         self.auth = Auth
 
     async def async_create_request(
-        self, namespace: ApiNamespace, operation: ApiOperation, parameters: dict | None
+        self, 
+        namespace: ApiNamespace, 
+        operation: ApiOperation, parameters: dict | None
     ) -> ApiRequest:
         """Create a standardised API request."""
         header = {
@@ -127,10 +127,17 @@ class UHomeApi:
         return await self._async_make_request(json=payload)
 
     async def send_command(
-        self, device_id: str, capability: str, command: str, arguments: dict | None
+        self, 
+        device_id: str, 
+        capability: str, 
+        command: str, 
+        arguments: dict | None
     ) -> Dict[str, Any]:
         """Send command to device."""
-        command_data = {"capability": capability, "name": command}
+        command_data: dict[str, Any] = {
+            "capability": capability, 
+            "name": command
+        }
         if arguments:
             command_data["arguments"] = arguments
 
@@ -163,8 +170,3 @@ class UHomeApi:
             uri
         )
         return await self._async_make_request(json=payload)
-
-
-    async def close(self):
-        """Close the API client."""
-        await self.auth.close()
