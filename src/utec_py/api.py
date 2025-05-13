@@ -52,10 +52,11 @@ class UHomeApi:
     async def async_create_request(
         self, 
         namespace: ApiNamespace, 
-        operation: ApiOperation, parameters: dict | None
+        operation: ApiOperation, 
+        parameters: dict | None
     ) -> ApiRequest:
         """Create a standardised API request."""
-        header = {
+        header: ApiHeader = {
             "namespace": namespace,
             "name": operation,
             "messageID": str(uuid4()),

@@ -1,7 +1,7 @@
 """U-Home API constants."""
 
 from enum import Enum
-from typing import TypedDict, Optional
+from typing import Any, TypedDict, Optional
 
 AUTH_BASE_URL = "https://oauth.u-tec.com/authorize?"
 TOKEN_BASE_URL = "https://oauth.u-tec.com/token?"
@@ -27,12 +27,12 @@ class ApiOperation(str, Enum):
 
 
 class ApiHeader(TypedDict):
-    namespace: str
-    name: str
+    namespace: ApiNamespace
+    name: ApiOperation
     messageID: str
     payloadVersion: str
 
 
 class ApiRequest(TypedDict):
     header: ApiHeader
-    payload: Optional[dict]
+    payload: Optional[dict[str, Any]]
