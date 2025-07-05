@@ -155,14 +155,14 @@ class UHomeApi:
         )
         return await self._async_make_request(json=payload)
 
-    async def set_push_status(self, access_token: str, uri: str):
+    async def set_push_status(self, uri: str):
         """Register URI for push device updates
 
         Args:
             access_token (str): Ouath2 Access token
             uri (str): URL to receive push updates - must be HTTP/HTTPS with valid cert
         """
-        params = {"configure": {"notification": {"access_token": access_token, "url": uri}}}
+        params = {"configure": {"notification": {"url": uri}}}
         payload = await self.async_create_request(
             ApiNamespace.CONFIGURE, ApiOperation.SET, params
             )
