@@ -24,6 +24,7 @@ class DeviceCapability(str, Enum):
     LOCK_USER = "st.lockUser"
     DOOR_SENSOR = "st.doorSensor"
     BRIGHTNESS = "st.brightness"
+    SWITCH_LEVEL = "st.switchLevel"
     COLOR = "st.color"
     COLOR_TEMPERATURE = "st.colorTemperature"
     HEALTH_CHECK = "st.healthCheck"
@@ -49,29 +50,33 @@ class LockState(str, Enum):
 
 
 class LockMode(IntEnum):
-    """Lock mode vlaues from API."""
+    """Lock mode values from API (st.lock / lockMode attribute).
 
-    UNSURE = 0
-    LOCKED = 1
-    UNLOCKED = 2
-    JAMMED = 3
-    UNKNOWN = 4
+    Per API spec: 0 = Normal, 1 = Passage, 2 = Locked.
+    """
 
-
-class DoorState(IntEnum):
-    """Door state values from API."""
-
-    CLOSED = 1
-    OPEN = 2
-    UNKNOWN = 3
+    NORMAL = 0
+    PASSAGE = 1
+    LOCKED = 2
 
 
-class SwitchState(IntEnum):
-    """Switch state values from API."""
+class DoorState(str, Enum):
+    """Door state values from API (st.doorSensor / sensorState attribute)."""
 
-    ON = 1
-    OFF = 2
-    UNKNOWN = 3
+    CLOSED = "Closed"
+    OPEN = "Open"
+    UNKNOWN = "Unknown"
+
+
+# SwitchState is kept for reading state values returned by the API.
+# Commands use the command name directly ("on"/"off") with no arguments,
+# per the st.switch capability spec.
+class SwitchState(str, Enum):
+    """Switch state values returned by the API."""
+
+    ON = "on"
+    OFF = "off"
+    UNKNOWN = "Unknown"
 
 
 @dataclass
@@ -85,8 +90,8 @@ class DeviceCommand:
     def to_dict(self) -> Dict[str, Any]:
         """Convert command to API-compatible dictionary format."""
         command_dict: Dict[str, Any] = {
-            "capability": self.capability, 
-            "name": self.name
+            "capability": self.capability,
+            "name": self.name,
         }
         if self.arguments:
             command_dict["arguments"] = self.arguments
@@ -216,9 +221,4 @@ STATE_MAP = {
     SwitchState.ON: "on",
     SwitchState.OFF: "off",
     SwitchState.UNKNOWN: "unknown",
-}
-
-# Reverse mapping for command values
-COMMAND_MAP = {
-    "switch": {"on": SwitchState.ON, "off": SwitchState.OFF},
 }

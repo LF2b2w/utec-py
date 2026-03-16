@@ -50,9 +50,9 @@ class UHomeApi:
         self.auth = Auth
 
     async def async_create_request(
-        self, 
-        namespace: ApiNamespace, 
-        operation: ApiOperation, 
+        self,
+        namespace: ApiNamespace,
+        operation: ApiOperation,
         parameters: dict | None
     ) -> ApiRequest:
         """Create a standardised API request."""
@@ -128,15 +128,15 @@ class UHomeApi:
         return await self._async_make_request(json=payload)
 
     async def send_command(
-        self, 
-        device_id: str, 
-        capability: str, 
-        command: str, 
+        self,
+        device_id: str,
+        capability: str,
+        command: str,
         arguments: dict | None
     ) -> Dict[str, Any]:
         """Send command to device."""
         command_data: dict[str, Any] = {
-            "capability": capability, 
+            "capability": capability,
             "name": command
         }
         if arguments:
@@ -155,19 +155,16 @@ class UHomeApi:
         )
         return await self._async_make_request(json=payload)
 
-    async def set_push_status(self, uri: str):
-        """Register URI for push device updates
+    async def set_push_status(self, uri: str, access_token: str):
+        """Register URI for push device updates.
 
         Args:
-            access_token (str): Ouath2 Access token
-            uri (str): URL to receive push updates - must be HTTP/HTTPS with valid cert
+            uri: URL to receive push updates - must be HTTP/HTTPS with valid CA cert
+            access_token: OAuth2 access token sent by U-Tec with each push notification
         """
-        params = {"configure": {"notification": {"url": uri}}}
+        params = {"configure": {"notification": {"access_token": access_token, "url": uri}}}
         payload = await self.async_create_request(
             ApiNamespace.CONFIGURE, ApiOperation.SET, params
-            )
-        logger.debug(
-            "Setting push update url. URL: %s",
-            uri
         )
+        logger.debug("Setting push update url. URL: %s", uri)
         return await self._async_make_request(json=payload)
