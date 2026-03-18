@@ -103,14 +103,8 @@ class Lock(BaseDevice):
         """Lock the device."""
         command = DeviceCommand(capability=DeviceCapability.LOCK, name="lock")
         await self.send_command(command)
-        await self.update()
 
     async def unlock(self) -> None:
         """Unlock the device."""
         command = DeviceCommand(capability=DeviceCapability.LOCK, name="unlock")
         await self.send_command(command)
-        await self.update()
-
-    async def update(self) -> None:
-        """Update device state."""
-        await super().update()
