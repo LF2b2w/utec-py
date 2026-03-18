@@ -63,21 +63,22 @@ class Light(BaseDevice):
     async def turn_on(self, **kwargs) -> None:
         """Turn on the light with optional attributes.
 
-        Per st.switch capability spec, the command name is "on" with no arguments.
-        Brightness and color are set via separate commands after the switch-on.
+        If an attribute command (brightness, color_temp, rgb_color) is provided,
+        the device turns on implicitly — no separate "on" command is needed.
+        Only send the explicit "on" command when no attributes are specified.
         """
-        command = DeviceCommand(
-            capability=DeviceCapability.SWITCH,
-            name="on",
-        )
-        await self.send_command(command)
-
         if "brightness" in kwargs:
             await self.set_brightness(kwargs["brightness"])
-        if "color_temp" in kwargs:
+        elif "color_temp" in kwargs:
             await self.set_color_temp(kwargs["color_temp"])
-        if "rgb_color" in kwargs:
+        elif "rgb_color" in kwargs:
             await self.set_rgb_color(*kwargs["rgb_color"])
+        else:
+            command = DeviceCommand(
+                capability=DeviceCapability.SWITCH,
+                name="on",
+            )
+            await self.send_command(command)
 
     async def turn_off(self) -> None:
         """Turn off the light.
