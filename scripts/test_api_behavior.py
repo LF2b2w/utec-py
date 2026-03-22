@@ -43,7 +43,7 @@ def _header(namespace: str, name: str) -> dict:
     return {
         "namespace": namespace,
         "name": name,
-        "messageID": str(uuid4()),
+        "messageId": str(uuid4()),
         "payloadVersion": "1",
     }
 

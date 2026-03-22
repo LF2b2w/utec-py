@@ -59,12 +59,6 @@ class Lock(BaseDevice):
         return state == LockState.LOCKED if state is not None else False
 
     @property
-    def is_open(self) -> bool:
-        """Check if the lock is in unlocked state."""
-        state = self._get_state_value(DeviceCapability.LOCK, "lockState")
-        return state == LockState.UNLOCKED if state is not None else False
-
-    @property
     def is_jammed(self) -> bool:
         """Check if the lock is jammed."""
         state = self._get_state_value(DeviceCapability.LOCK, "lockState")

@@ -32,7 +32,7 @@ class ApiOperation(str, Enum):
 class ApiHeader(TypedDict):
     namespace: str
     name: str
-    messageID: str
+    messageId: str
     payloadVersion: str
 
 
@@ -59,7 +59,7 @@ class UHomeApi:
         header: ApiHeader = {
             "namespace": namespace,
             "name": operation,
-            "messageID": str(uuid4()),
+            "messageId": str(uuid4()),
             "payloadVersion": "1",
         }
         return {"header": header, "payload": parameters}
