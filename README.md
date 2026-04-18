@@ -1,4 +1,7 @@
 # utec-py
+
+> **Fork notice:** This is a fork of [LF2b2w/utec-py](https://github.com/LF2b2w/utec-py), the original repository by [@LF2b2w](https://github.com/LF2b2w). The upstream project currently appears to be unmaintained, so this fork exists to keep the library working alongside the companion [Uhome-HA](https://github.com/LF2b2w/Uhome-HA) integration. Any changes made here will be offered back to the upstream repository should it become responsive again.
+
 Python API for U-Tec Devices. Primarily for Home Assistant, but should be able to be used anywhere.
 
 # Classes
