@@ -6,6 +6,7 @@
 ## Additions
 pypi.py
 test.py
+.venv/
 
 # User-specific files
 *.rsuser

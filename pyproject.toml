@@ -29,3 +29,27 @@ Issues = "https://github.com/LF2b2w/utec-py/issues"
 [tool.setuptools]
 package-dir = {"" = "src"}
 license-files = []
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q"
+
+[tool.coverage.run]
+branch = true
+source = ["utec_py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+fail_under = 90
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+    "def __repr__",
+    "def __str__",
+    "@(abc\\.)?abstractmethod",
+]
