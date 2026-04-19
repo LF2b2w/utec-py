@@ -69,3 +69,64 @@ async def test_discover_devices_500_raises_api_error():
             mock.post(API_BASE_URL, status=500, body="Server Error")
             with pytest.raises(ApiError):
                 await api.discover_devices()
+
+
+# --- Endpoint payload shapes (reads) ---
+
+
+def _last_request_body(mock, url=API_BASE_URL):
+    key = ("POST", __import__("yarl").URL(url))
+    call = mock.requests[key][-1]
+    return call.kwargs.get("json")
+
+
+@pytest.mark.asyncio
+async def test_discover_devices_payload_has_discovery_header():
+    async with aiohttp.ClientSession() as session:
+        api = UHomeApi(_FakeAuth(session))
+        with aioresponses() as mock:
+            mock.post(API_BASE_URL, payload={})
+            await api.discover_devices()
+            body = _last_request_body(mock)
+            assert body["header"]["namespace"] == "Uhome.Device"
+            assert body["header"]["name"] == "Discovery"
+            assert body["header"]["payloadVersion"] == "1"
+            assert "messageId" in body["header"]
+
+
+@pytest.mark.asyncio
+async def test_query_device_sends_single_device_id():
+    async with aiohttp.ClientSession() as session:
+        api = UHomeApi(_FakeAuth(session))
+        with aioresponses() as mock:
+            mock.post(API_BASE_URL, payload={})
+            await api.query_device("abc")
+            body = _last_request_body(mock)
+            assert body["header"]["name"] == "Query"
+            assert body["payload"]["devices"] == [{"id": "abc"}]
+
+
+@pytest.mark.asyncio
+async def test_get_device_state_multi_with_custom_data():
+    async with aiohttp.ClientSession() as session:
+        api = UHomeApi(_FakeAuth(session))
+        with aioresponses() as mock:
+            mock.post(API_BASE_URL, payload={})
+            await api.get_device_state(["a", "b"], {"k": 1})
+            body = _last_request_body(mock)
+            devices = body["payload"]["devices"]
+            assert devices == [
+                {"id": "a", "custom_data": {"k": 1}},
+                {"id": "b", "custom_data": {"k": 1}},
+            ]
+
+
+@pytest.mark.asyncio
+async def test_get_device_state_multi_without_custom_data():
+    async with aiohttp.ClientSession() as session:
+        api = UHomeApi(_FakeAuth(session))
+        with aioresponses() as mock:
+            mock.post(API_BASE_URL, payload={})
+            await api.get_device_state(["a"], None)
+            body = _last_request_body(mock)
+            assert body["payload"]["devices"] == [{"id": "a"}]
