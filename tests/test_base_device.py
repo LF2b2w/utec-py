@@ -131,3 +131,82 @@ def test_get_state_data_flattens_states(discovery_dict, mock_api):
 def test_get_state_data_empty_when_no_state(discovery_dict, mock_api):
     dev = _make_device(discovery_dict, mock_api)
     assert dev.get_state_data() == {}
+
+
+# --- Async update paths ---
+
+import pytest
+from unittest.mock import AsyncMock
+
+
+@pytest.mark.asyncio
+async def test_update_pulls_state_from_api(discovery_dict, mock_api):
+    dev = BaseDevice(discovery_dict(handle_type="utec-switch"), mock_api)
+    mock_api.query_device.return_value = {
+        "payload": {
+            "devices": [{
+                "id": "dev-1",
+                "states": [{"capability": "st.switch", "name": "switch", "value": "on"}],
+            }]
+        }
+    }
+    await dev.update()
+    assert dev._state_data["states"][0]["value"] == "on"
+    assert dev._last_update is not None
+    mock_api.query_device.assert_awaited_once_with("dev-1")
+
+
+@pytest.mark.asyncio
+async def test_update_wraps_api_error_in_device_error(discovery_dict, mock_api):
+    dev = BaseDevice(discovery_dict(handle_type="utec-switch"), mock_api)
+    mock_api.query_device.side_effect = RuntimeError("boom")
+    with pytest.raises(DeviceError, match="Failed to update device state"):
+        await dev.update()
+
+
+@pytest.mark.asyncio
+async def test_update_noop_when_no_devices_in_payload(discovery_dict, mock_api):
+    dev = BaseDevice(discovery_dict(handle_type="utec-switch"), mock_api)
+    mock_api.query_device.return_value = {"payload": {"devices": []}}
+    await dev.update()
+    assert dev._state_data is None
+
+
+@pytest.mark.asyncio
+async def test_update_state_data_accepts_push_shape(discovery_dict, mock_api):
+    dev = BaseDevice(discovery_dict(handle_type="utec-switch"), mock_api)
+    push = {
+        "id": "dev-1",
+        "states": [{"capability": "st.switch", "name": "switch", "value": "on"}],
+    }
+    await dev.update_state_data(push)
+    assert dev._state_data == push
+    assert dev._last_update is not None
+
+
+@pytest.mark.asyncio
+async def test_update_state_data_warns_and_skips_malformed(discovery_dict, mock_api):
+    dev = BaseDevice(discovery_dict(handle_type="utec-switch"), mock_api)
+    await dev.update_state_data({"id": "dev-1"})  # no "states"
+    assert dev._state_data is None
+
+
+@pytest.mark.asyncio
+async def test_send_command_delegates_to_api(discovery_dict, mock_api):
+    from utec_py.devices.device_const import DeviceCommand
+
+    dev = BaseDevice(discovery_dict(handle_type="utec-switch"), mock_api)
+    cmd = DeviceCommand(capability="st.switch", name="on", arguments=None)
+    await dev.send_command(cmd)
+    mock_api.send_command.assert_awaited_once_with("dev-1", "st.switch", "on", None)
+
+
+@pytest.mark.asyncio
+async def test_send_command_wraps_api_error(discovery_dict, mock_api):
+    from utec_py.devices.device_const import DeviceCommand
+
+    dev = BaseDevice(discovery_dict(handle_type="utec-switch"), mock_api)
+    mock_api.send_command.side_effect = RuntimeError("nope")
+    cmd = DeviceCommand(capability="st.switch", name="on", arguments=None)
+    with pytest.raises(DeviceError, match="Failed to send command"):
+        await dev.send_command(cmd)
