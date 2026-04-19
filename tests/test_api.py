@@ -130,3 +130,52 @@ async def test_get_device_state_multi_without_custom_data():
             await api.get_device_state(["a"], None)
             body = _last_request_body(mock)
             assert body["payload"]["devices"] == [{"id": "a"}]
+
+
+# --- Endpoint payload shapes (writes) ---
+
+
+@pytest.mark.asyncio
+async def test_send_command_includes_arguments_when_provided():
+    async with aiohttp.ClientSession() as session:
+        api = UHomeApi(_FakeAuth(session))
+        with aioresponses() as mock:
+            mock.post(API_BASE_URL, payload={})
+            await api.send_command("dev-1", "st.switchLevel", "setLevel", {"level": 50})
+            body = _last_request_body(mock)
+            cmd = body["payload"]["devices"][0]["command"]
+            assert cmd["capability"] == "st.switchLevel"
+            assert cmd["name"] == "setLevel"
+            assert cmd["arguments"] == {"level": 50}
+
+
+@pytest.mark.asyncio
+async def test_send_command_omits_arguments_when_none():
+    async with aiohttp.ClientSession() as session:
+        api = UHomeApi(_FakeAuth(session))
+        with aioresponses() as mock:
+            mock.post(API_BASE_URL, payload={})
+            await api.send_command("dev-1", "st.switch", "on", None)
+            body = _last_request_body(mock)
+            cmd = body["payload"]["devices"][0]["command"]
+            assert "arguments" not in cmd
+
+
+@pytest.mark.asyncio
+async def test_set_push_status_payload_shape():
+    async with aiohttp.ClientSession() as session:
+        api = UHomeApi(_FakeAuth(session))
+        with aioresponses() as mock:
+            mock.post(API_BASE_URL, payload={})
+            await api.set_push_status("https://hook.test", "tok-abc")
+            body = _last_request_body(mock)
+            assert body["header"]["namespace"] == "Uhome.Configure"
+            assert body["header"]["name"] == "Set"
+            assert body["payload"] == {
+                "configure": {
+                    "notification": {
+                        "access_token": "tok-abc",
+                        "url": "https://hook.test",
+                    }
+                }
+            }
