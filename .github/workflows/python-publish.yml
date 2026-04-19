@@ -51,11 +51,11 @@ jobs:
     environment:
       name: release
       # OPTIONAL: uncomment and update to include your PyPI project URL in the deployment status:
-      url: https://pypi.org/p/utec-py-LF2b2w/
+      # url: https://pypi.org/p/utec-py-LF2b2w/
       #
       # ALTERNATIVE: if your GitHub Release name is the PyPI project version string
       # ALTERNATIVE: exactly, uncomment the following line instead:
-      # url: https://pypi.org/project/YOURPROJECT/${{ github.event.release.name }}
+      url: https://pypi.org/project/utec-py-LF2b2w/${{ github.event.release.name }}
 
     steps:
       - name: Retrieve release distributions
