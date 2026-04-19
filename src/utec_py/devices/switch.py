@@ -24,19 +24,23 @@ class Switch(BaseDevice):
         return self._state_data is not None
 
     async def turn_on(self) -> None:
-        """Turn on the switch."""
+        """Turn on the switch.
+
+        Per st.switch capability spec, the command name is "on" with no arguments.
+        """
         command = DeviceCommand(
             capability=DeviceCapability.SWITCH,
-            name="switch",
-            arguments={"value": SwitchState.ON},
+            name="on",
         )
         await self.send_command(command)
 
     async def turn_off(self) -> None:
-        """Turn off the switch."""
+        """Turn off the switch.
+
+        Per st.switch capability spec, the command name is "off" with no arguments.
+        """
         command = DeviceCommand(
             capability=DeviceCapability.SWITCH,
-            name="switch",
-            arguments={"value": SwitchState.OFF},
+            name="off",
         )
         await self.send_command(command)

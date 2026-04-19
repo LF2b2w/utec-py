@@ -5,15 +5,16 @@ from .device_const import (
     DeviceCapability,
     DeviceCategory,
     DeviceCommand,
+    DoorState,
     LockMode,
     LockState,
 )
 
 
 class Lock(BaseDevice):
-    """Represents a Switch device in the U-Home API.
+    """Represents a Lock device in the U-Home API.
 
-    Maps to Home Assistant's switch platform.
+    Maps to Home Assistant's lock platform.
     """
 
     @property
@@ -37,32 +38,25 @@ class Lock(BaseDevice):
         """Get the door state if door sensor is present."""
         if not self.has_door_sensor:
             return None
-        return self._get_state_value(DeviceCapability.DOOR_SENSOR, "SensorState")
+        # API attribute name is "sensorState" (lowercase s)
+        return self._get_state_value(DeviceCapability.DOOR_SENSOR, "sensorState")
 
     @property
     def lock_mode(self) -> str | None:
         """Get the current lock mode."""
         state = self._get_state_value(DeviceCapability.LOCK, "lockMode")
-        LOCK_STATE_MAP = {
+        lock_mode_map = {
+            LockMode.NORMAL: "Normal",
+            LockMode.PASSAGE: "Passage",
             LockMode.LOCKED: "Locked",
-            LockMode.UNLOCKED: "Unlocked",
-            LockMode.JAMMED: "Jammed",
-            LockMode.UNKNOWN: "Unknown",
-            LockMode.UNSURE: "Locked",
         }
-        return LOCK_STATE_MAP.get(state)
+        return lock_mode_map.get(state)
 
     @property
     def is_locked(self) -> bool:
         """Check if the lock is in locked state."""
         state = self._get_state_value(DeviceCapability.LOCK, "lockState")
         return state == LockState.LOCKED if state is not None else False
-
-    @property
-    def is_open(self) -> bool:
-        """Check if the lock is in unlocked state."""
-        state = self._get_state_value(DeviceCapability.LOCK, "lockState")
-        return state == LockState.UNLOCKED if state is not None else False
 
     @property
     def is_jammed(self) -> bool:
@@ -72,27 +66,27 @@ class Lock(BaseDevice):
 
     @property
     def is_door_open(self) -> bool | None:
-        """Check if the door is closed (binary sensor)."""
+        """Check if the door is open."""
         if not self.has_door_sensor:
             return None
-        return self.door_state == "Closed"
+        return self.door_state == DoorState.OPEN
 
     @property
     def battery_status(self) -> str | None:
-        """Get the current battery level (1-5)."""
-        BattLevel = self._get_state_value(DeviceCapability.BATTERY_LEVEL, "level")
-        Battery_states = {
+        """Get the current battery level as a string."""
+        batt_level = self._get_state_value(DeviceCapability.BATTERY_LEVEL, "level")
+        battery_states = {
             1: "Critically Low",
             2: "Low",
             3: "Medium",
             4: "High",
             5: "Full",
         }
-        return Battery_states.get(BattLevel)
+        return battery_states.get(batt_level)
 
     @property
     def battery_level(self) -> int | None:
-        """Get the current battery level and convert to percent."""
+        """Get the current battery level as a percentage."""
         level = self._get_state_value(DeviceCapability.BATTERY_LEVEL, "level")
         if level is None:
             return None
@@ -103,14 +97,8 @@ class Lock(BaseDevice):
         """Lock the device."""
         command = DeviceCommand(capability=DeviceCapability.LOCK, name="lock")
         await self.send_command(command)
-        await self.update()
 
     async def unlock(self) -> None:
         """Unlock the device."""
         command = DeviceCommand(capability=DeviceCapability.LOCK, name="unlock")
         await self.send_command(command)
-        await self.update()
-
-    async def update(self) -> None:
-        """Update device state."""
-        await super().update()

@@ -28,8 +28,11 @@ class Light(BaseDevice):
 
     @property
     def brightness(self) -> int | None:
-        """Get brightness level (0-100)."""
-        return self._get_state_value(DeviceCapability.BRIGHTNESS, "level")
+        """Get brightness level (0-100).
+
+        The API reports brightness under st.switchLevel / level, not st.brightness.
+        """
+        return self._get_state_value(DeviceCapability.SWITCH_LEVEL, "level")
 
     @property
     def color_temp(self) -> int | None:
@@ -58,47 +61,53 @@ class Light(BaseDevice):
         return features
 
     async def turn_on(self, **kwargs) -> None:
-        """Turn on the light with optional attributes."""
-        # Basic on command
-        command = DeviceCommand(
-            capability=DeviceCapability.SWITCH,
-            name="switch",
-            arguments={"value": SwitchState.ON},
-        )
-        await self.send_command(command)
+        """Turn on the light with optional attributes.
 
-        # Handle additional attributes
+        If an attribute command (brightness, color_temp, rgb_color) is provided,
+        the device turns on implicitly — no separate "on" command is needed.
+        Only send the explicit "on" command when no attributes are specified.
+        """
         if "brightness" in kwargs:
             await self.set_brightness(kwargs["brightness"])
-        if "color_temp" in kwargs:
+        elif "color_temp" in kwargs:
             await self.set_color_temp(kwargs["color_temp"])
-        if "rgb_color" in kwargs:
+        elif "rgb_color" in kwargs:
             await self.set_rgb_color(*kwargs["rgb_color"])
+        else:
+            command = DeviceCommand(
+                capability=DeviceCapability.SWITCH,
+                name="on",
+            )
+            await self.send_command(command)
 
     async def turn_off(self) -> None:
-        """Turn off the light."""
+        """Turn off the light.
+
+        Per st.switch capability spec, the command name is "off" with no arguments.
+        """
         command = DeviceCommand(
             capability=DeviceCapability.SWITCH,
-            name="switch",
-            arguments={"value": SwitchState.OFF},
+            name="off",
         )
         await self.send_command(command)
 
     async def set_brightness(self, brightness: int) -> None:
-        """Set brightness level."""
-        if not BrightnessRange.MIN <= brightness <= BrightnessRange.MAX:
-            raise ValueError(
-                f"Brightness must be between {BrightnessRange.MIN} and {BrightnessRange.MAX}"
-            )
+        """Set brightness level (1-100).
+
+        Per st.switchLevel capability spec, command is setLevel with a
+        "level" argument (integer 0-100). We clamp to 1 as the minimum
+        since 0 means off per the spec — use turn_off() for that.
+        """
+        brightness = max(1, min(BrightnessRange.MAX, brightness))
         command = DeviceCommand(
-            capability=DeviceCapability.BRIGHTNESS,
-            name="level",
-            arguments={"value": brightness},
+            capability=DeviceCapability.SWITCH_LEVEL,
+            name="setLevel",
+            arguments={"level": brightness},
         )
         await self.send_command(command)
 
     async def set_color_temp(self, temp: int) -> None:
-        """Set color temperature."""
+        """Set color temperature in Kelvin."""
         if not ColorTempRange.MIN <= temp <= ColorTempRange.MAX:
             raise ValueError(
                 f"Color temperature must be between {ColorTempRange.MIN}K and {ColorTempRange.MAX}K"
