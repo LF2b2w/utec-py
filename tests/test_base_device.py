@@ -65,3 +65,69 @@ def test_device_info_dict_has_ha_shape(discovery_dict, mock_api):
     assert info["identifiers"] == {("uhome", "dev-1")}
     assert info["name"] == "Test Device"
     assert info["manufacturer"] == "U-Tec"
+
+
+# --- State accessors ---
+
+
+def test_available_false_when_no_state_data(discovery_dict, mock_api):
+    dev = _make_device(discovery_dict, mock_api)
+    assert dev.available is False
+
+
+def test_available_true_when_health_check_online(discovery_dict, mock_api, state_payload):
+    dev = _make_device(discovery_dict, mock_api)
+    dev._state_data = state_payload(states=[
+        {"capability": "st.healthCheck", "name": "status", "value": "Online"},
+    ])
+    assert dev.available is True
+
+
+def test_available_false_when_health_check_offline(discovery_dict, mock_api, state_payload):
+    dev = _make_device(discovery_dict, mock_api)
+    dev._state_data = state_payload(states=[
+        {"capability": "st.healthCheck", "name": "status", "value": "Offline"},
+    ])
+    assert dev.available is False
+
+
+def test_get_state_value_returns_none_when_no_state_data(discovery_dict, mock_api):
+    dev = _make_device(discovery_dict, mock_api)
+    assert dev._get_state_value("st.switch", "switch") is None
+
+
+def test_get_state_value_returns_none_when_states_empty(discovery_dict, mock_api):
+    dev = _make_device(discovery_dict, mock_api)
+    dev._state_data = {"states": []}
+    assert dev._get_state_value("st.switch", "switch") is None
+
+
+def test_get_state_value_returns_value_when_found(discovery_dict, mock_api):
+    dev = _make_device(discovery_dict, mock_api)
+    dev._state_data = {"states": [
+        {"capability": "st.switch", "name": "switch", "value": "on"},
+    ]}
+    assert dev._get_state_value("st.switch", "switch") == "on"
+
+
+def test_get_state_value_returns_none_when_not_found(discovery_dict, mock_api):
+    dev = _make_device(discovery_dict, mock_api)
+    dev._state_data = {"states": [
+        {"capability": "st.switchLevel", "name": "level", "value": 50},
+    ]}
+    assert dev._get_state_value("st.switch", "switch") is None
+
+
+def test_get_state_data_flattens_states(discovery_dict, mock_api):
+    dev = _make_device(discovery_dict, mock_api)
+    dev._state_data = {"states": [
+        {"capability": "st.switch", "name": "switch", "value": "on"},
+        {"capability": "st.switchLevel", "name": "level", "value": 80},
+    ]}
+    flat = dev.get_state_data()
+    assert flat == {"st.switch": {"switch": "on"}, "st.switchLevel": {"level": 80}}
+
+
+def test_get_state_data_empty_when_no_state(discovery_dict, mock_api):
+    dev = _make_device(discovery_dict, mock_api)
+    assert dev.get_state_data() == {}
