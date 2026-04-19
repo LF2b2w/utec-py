@@ -37,8 +37,7 @@ jobs:
       id-token: write
     environment:
       name: release
-      #url: https://pypi.org/p/utec-py-LF2b2w/
-      url: https://test.pypi.org/p/utec-py-LF2b2w/
+      url: https://pypi.org/p/utec-py-LF2b2w/
     steps:
       - name: Retrieve release distributions
         uses: actions/download-artifact@v4
@@ -48,5 +47,4 @@ jobs:
       - name: Publish release distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          repository-url: https://test.pypi.org/legacy/
           packages-dir: dist/
