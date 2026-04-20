@@ -179,3 +179,45 @@ async def test_set_push_status_payload_shape():
                     }
                 }
             }
+
+
+# --- Helper methods ---
+
+
+@pytest.mark.asyncio
+async def test_validate_auth_true_on_success():
+    async with aiohttp.ClientSession() as session:
+        api = UHomeApi(_FakeAuth(session))
+        with aioresponses() as mock:
+            mock.post(API_BASE_URL, payload={})
+            assert await api.validate_auth() is True
+
+
+@pytest.mark.asyncio
+async def test_validate_auth_false_on_api_error():
+    async with aiohttp.ClientSession() as session:
+        api = UHomeApi(_FakeAuth(session))
+        with aioresponses() as mock:
+            mock.post(API_BASE_URL, status=401, body="no")
+            assert await api.validate_auth() is False
+
+
+@pytest.mark.asyncio
+async def test_async_create_request_generates_unique_message_ids():
+    async with aiohttp.ClientSession() as session:
+        api = UHomeApi(_FakeAuth(session))
+        from utec_py.api import ApiNamespace, ApiOperation
+        req1 = await api.async_create_request(ApiNamespace.DEVICE, ApiOperation.QUERY, {})
+        req2 = await api.async_create_request(ApiNamespace.DEVICE, ApiOperation.QUERY, {})
+        assert req1["header"]["messageId"] != req2["header"]["messageId"]
+
+
+@pytest.mark.asyncio
+async def test_async_create_request_accepts_none_parameters():
+    async with aiohttp.ClientSession() as session:
+        api = UHomeApi(_FakeAuth(session))
+        from utec_py.api import ApiNamespace, ApiOperation
+        req = await api.async_create_request(
+            ApiNamespace.DEVICE, ApiOperation.DISCOVERY, None,
+        )
+        assert req["payload"] is None
