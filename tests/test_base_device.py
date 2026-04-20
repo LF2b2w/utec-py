@@ -210,3 +210,12 @@ async def test_send_command_wraps_api_error(discovery_dict, mock_api):
     cmd = DeviceCommand(capability="st.switch", name="on", arguments=None)
     with pytest.raises(DeviceError, match="Failed to send command"):
         await dev.send_command(cmd)
+
+
+def test_supported_capabilities_covers_all_known_handle_types(mock_api, discovery_dict):
+    """Every HandleType with a capability mapping must round-trip cleanly."""
+    from utec_py.devices.device_const import HANDLE_TYPE_CAPABILITIES
+
+    for handle_type, expected_caps in HANDLE_TYPE_CAPABILITIES.items():
+        dev = BaseDevice(discovery_dict(handle_type=handle_type), mock_api)
+        assert dev.supported_capabilities == expected_caps
