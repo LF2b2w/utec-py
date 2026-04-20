@@ -1,5 +1,6 @@
 """Tests for UHomeApi — transport layer + endpoints."""
 
+import asyncio
 from unittest.mock import AsyncMock
 
 import aiohttp
@@ -221,3 +222,48 @@ async def test_async_create_request_accepts_none_parameters():
             ApiNamespace.DEVICE, ApiOperation.DISCOVERY, None,
         )
         assert req["payload"] is None
+
+
+# --- Transport error surface ---
+
+
+@pytest.mark.asyncio
+async def test_network_timeout_bubbles_up():
+    async with aiohttp.ClientSession() as session:
+        api = UHomeApi(_FakeAuth(session))
+        with aioresponses() as mock:
+            mock.post(API_BASE_URL, exception=asyncio.TimeoutError())
+            with pytest.raises(asyncio.TimeoutError):
+                await api.discover_devices()
+
+
+@pytest.mark.asyncio
+async def test_client_connection_error_bubbles_up():
+    async with aiohttp.ClientSession() as session:
+        api = UHomeApi(_FakeAuth(session))
+        with aioresponses() as mock:
+            mock.post(API_BASE_URL, exception=aiohttp.ClientConnectionError("boom"))
+            with pytest.raises(aiohttp.ClientConnectionError):
+                await api.discover_devices()
+
+
+@pytest.mark.asyncio
+async def test_429_rate_limit_raises_api_error():
+    async with aiohttp.ClientSession() as session:
+        api = UHomeApi(_FakeAuth(session))
+        with aioresponses() as mock:
+            mock.post(API_BASE_URL, status=429, body="rate limit")
+            with pytest.raises(ApiError) as exc:
+                await api.discover_devices()
+            assert "429" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_401_unauthorized_raises_api_error():
+    async with aiohttp.ClientSession() as session:
+        api = UHomeApi(_FakeAuth(session))
+        with aioresponses() as mock:
+            mock.post(API_BASE_URL, status=401, body="unauthorized")
+            with pytest.raises(ApiError) as exc:
+                await api.discover_devices()
+            assert "401" in str(exc.value)
