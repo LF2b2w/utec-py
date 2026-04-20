@@ -80,3 +80,36 @@ async def test_set_color_temp_in_range_sends_command(light, mock_api):
     assert args[1] == "st.colorTemperature"
     assert args[2] == "temperature"
     assert args[3] == {"value": 4000}
+
+
+@pytest.mark.asyncio
+async def test_turn_on_brightness_sends_set_level(light, mock_api):
+    await light.turn_on(brightness=50)
+    calls = mock_api.send_command.await_args_list
+    level_calls = [c for c in calls if c.args[1] == "st.switchLevel"]
+    assert level_calls
+    assert level_calls[0].args[3].get("level") == 50
+
+
+@pytest.mark.asyncio
+async def test_turn_on_color_temp_sends_color_temp_capability(light, mock_api):
+    await light.turn_on(color_temp=4000)
+    calls = mock_api.send_command.await_args_list
+    ct_calls = [c for c in calls if "colorTemperature" in c.args[1] or "color_temp" in c.args[1]]
+    assert ct_calls
+
+
+@pytest.mark.asyncio
+async def test_turn_on_rgb_color_sends_color_capability(light, mock_api):
+    await light.turn_on(rgb_color=(10, 20, 30))
+    calls = mock_api.send_command.await_args_list
+    rgb_calls = [c for c in calls if "color" in c.args[1].lower()]
+    assert rgb_calls
+
+
+@pytest.mark.asyncio
+async def test_turn_on_plain_still_sends_only_on_command(light, mock_api):
+    await light.turn_on()
+    calls = mock_api.send_command.await_args_list
+    on_calls = [c for c in calls if c.args[1] == "st.switch" and c.args[2] == "on"]
+    assert on_calls
