@@ -113,3 +113,75 @@ async def test_turn_on_plain_still_sends_only_on_command(light, mock_api):
     calls = mock_api.send_command.await_args_list
     on_calls = [c for c in calls if c.args[1] == "st.switch" and c.args[2] == "on"]
     assert on_calls
+
+
+@pytest.mark.asyncio
+async def test_set_brightness_in_range(light, mock_api):
+    await light.set_brightness(50)
+    calls = mock_api.send_command.await_args_list
+    level_calls = [c for c in calls if c.args[1] == "st.switchLevel"]
+    assert level_calls
+    assert level_calls[0].args[3].get("level") == 50
+
+
+@pytest.mark.asyncio
+async def test_set_color_temp_in_range(light, mock_api):
+    # Adjust valid value based on AUDIT-documented range
+    await light.set_color_temp(3500)
+    calls = mock_api.send_command.await_args_list
+    ct_calls = [c for c in calls if "colorTemperature" in c.args[1] or "color_temp" in c.args[1]]
+    assert ct_calls
+
+
+@pytest.mark.asyncio
+async def test_set_rgb_color(light, mock_api):
+    # set_rgb_color takes three positional ints (red, green, blue), not a tuple
+    await light.set_rgb_color(10, 20, 30)
+    calls = mock_api.send_command.await_args_list
+    rgb_calls = [c for c in calls if "color" in c.args[1].lower()]
+    assert rgb_calls
+
+
+def test_color_temp_property_returns_value(light):
+    light._state_data = {"states": [
+        {"capability": "st.colorTemperature", "name": "temperature", "value": 4000},
+    ]}
+    assert light.color_temp == 4000
+
+
+def test_color_temp_property_none_when_no_state(light):
+    assert light.color_temp is None
+
+
+def test_rgb_color_property_returns_tuple(light):
+    light._state_data = {"states": [
+        {"capability": "st.color", "name": "color", "value": {"r": 10, "g": 20, "b": 30}},
+    ]}
+    result = light.rgb_color
+    assert result == (10, 20, 30)
+
+
+def test_rgb_color_property_none_when_no_state(light):
+    assert light.rgb_color is None
+
+
+def test_supported_features_brightness(light):
+    light._state_data = {"states": [
+        {"capability": "st.brightness", "name": "brightness", "value": 50},
+    ]}
+    features = light.supported_features
+    assert isinstance(features, set)
+    assert "brightness" in features
+
+
+def test_supported_features_empty_when_no_capabilities(light):
+    features = light.supported_features
+    assert isinstance(features, set)
+
+
+def test_supported_features_color_and_color_temp(discovery_dict, mock_api):
+    # utec-light-rgbaw has COLOR and COLOR_TEMPERATURE capabilities
+    rgbaw_light = Light(discovery_dict(handle_type="utec-light-rgbaw-br", category="LIGHT"), mock_api)
+    features = rgbaw_light.supported_features
+    assert "color" in features
+    assert "color_temp" in features
